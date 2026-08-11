@@ -3,9 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>写实提示词生成器 v1.0.0</title>
+<title>写实提示词生成器 v1.0.1</title>
 <style>
-  :root, html[data-theme="light"]{
+  :root, html[data-theme="dark"]{
+    --bg:#0e131f; --card:#151d2e; --card2:#0a0f1a; --border:#26324a;
+    --text:#e2e8f0; --text2:#8b9bb4; --text3:#64748b;
+    --accent:#4f8ef7; --accent-soft:rgba(79,142,247,.14);
+    --pos:#2dd4bf; --pos-soft:rgba(45,212,191,.14); --neg:#f87171; --neg-soft:rgba(248,113,113,.14);
+    --fav:#f5b942; --fav-soft:rgba(245,185,66,.16);
+    --radius:10px; --radius-sm:6px;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+  html[data-theme="light"]{
     --bg:#f7f5f2; --card:#ffffff; --card2:#efece7; --border:#e5e1da;
     --text:#1e293b; --text2:#475569; --text3:#64748b;
     --accent:#4f8ef7; --accent-soft:rgba(79,142,247,.14);
@@ -13,14 +22,6 @@
     --fav:#f5b942; --fav-soft:rgba(245,185,66,.16);
     --radius:10px; --radius-sm:6px;
     --shadow:0 1px 2px rgba(15,23,42,.08);
-  }
-  html[data-theme="dark"]{
-    --bg:#0e131f; --card:#151d2e; --card2:#0a0f1a; --border:#26324a;
-    --text:#e2e8f0; --text2:#8b9bb4; --text3:#64748b;
-    --accent:#4f8ef7; --accent-soft:rgba(79,142,247,.14);
-    --pos:#2dd4bf; --pos-soft:rgba(45,212,191,.14); --neg:#f87171; --neg-soft:rgba(248,113,113,.14);
-    --fav:#f5b942; --fav-soft:rgba(245,185,66,.16);
-    --shadow:0 1px 2px rgba(0,0,0,.4);
   }
   @media (prefers-color-scheme: dark){ :root{ color-scheme:dark; } }
 
@@ -94,7 +95,7 @@
 <body>
 
 <div class="topbar">
-  <h1>🎨 写实提示词生成器 v1.0.0</h1>
+  <h1>🎨 写实提示词生成器 v1.0.1</h1>
   <span class="sub">自然语言 · 适配 RealVis / Juggernaut 写实模型</span>
   <div class="spacer"></div>
   <select id="presetSel"><option value="">预设</option></select>
@@ -143,7 +144,7 @@
   <div class="row"><button id="wReset">重置为 1</button> <button id="wClose" style="margin-left:auto">完成</button></div>
 </div>
 
-<footer>写实提示词生成器 v1.0.0 · 单文件离线可用 · 槽位式自然语言拼装</footer>
+<footer>写实提示词生成器 v1.0.1 · 单文件离线可用 · 槽位式自然语言拼装</footer>
 
 <script>
 (function(){

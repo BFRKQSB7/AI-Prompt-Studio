@@ -1,4 +1,4 @@
-# Realistic Prompt Generator v1.0.0
+# Realistic Prompt Generator v1.0.1
 
 [**中文简体**](../../README.md) | **English**
 
@@ -7,6 +7,14 @@ A local, offline realistic-model prompt generator: **click slot phrases to auto-
 ## Compatible models
 
 **RealVis XL V5.0 / Juggernaut v9** and other natural-language realistic models (they expect full sentences, not Danbooru tags). Complements the "AI Drawing Prompt Supermarket" (tag-style, for NoobAI / Manhwa).
+
+## Related tool
+
+Tag-based models (NoobAI / Manhwa)? Use the **AI Drawing Prompt Supermarket** (Danbooru tag point-and-assemble):
+
+👉 [ai-prompt-supermarket](https://github.com/BFRKQSB7/ai-prompt-supermarket) · [online](https://bfrkqsb7.github.io/ai-prompt-supermarket/)
+
+**When to go there**: your model is tag-based (NoobAI / Manhwa); this tool serves natural-language types (RealVis / Juggernaut).
 
 ## Features
 
@@ -31,6 +39,10 @@ Open `index.html`, pick a slot on the left, click phrases in the middle, and the
 - The local version works offline (all data inlined, double-click to open)
 
 ## Changelog
+
+### v1.0.1
+- **Optimized**: dark mode by default (still toggleable to light with 🌓)
+- **Optimized**: README adds a "Related tool" link (to the AI Drawing Prompt Supermarket)
 
 ### v1.0.0
 - **Added**: first release — 8-slot natural-language prompt assembly + weights / shuffle / favorites / presets / dark mode / 3-tier copy fallback

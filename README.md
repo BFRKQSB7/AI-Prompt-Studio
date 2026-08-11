@@ -1,4 +1,4 @@
-# 写实提示词生成器 v1.0.0
+# 写实提示词生成器 v1.0.1
 
 **中文简体** | [**English**](./docs/en/README.md)
 
@@ -7,6 +7,14 @@
 ## 适配模型
 
 **RealVis XL V5.0 / Juggernaut v9** 等自然语言型写实模型（这类模型吃完整句子，不是 Danbooru 标签）。与「AI 绘画提示词超市」（标签流，给 NoobAI / Manhwa）互补。
+
+## 相关工具
+
+标签型模型（NoobAI / Manhwa）用 **AI 绘画提示词超市**（Danbooru 标签点选拼装）：
+
+👉 [AI 绘画提示词超市 — ai-prompt-supermarket](https://github.com/BFRKQSB7/ai-prompt-supermarket) · [在线版](https://bfrkqsb7.github.io/ai-prompt-supermarket/)
+
+**什么时候该去**：你的模型是 NoobAI / Manhwa 这类标签型 → 去超市；本工具服务 RealVis / Juggernaut 这类自然语言型。
 
 ## 特性
 
@@ -31,6 +39,10 @@
 - 本地版可下载离线使用（数据全内联，双击即开）
 
 ## 变更日志
+
+### v1.0.1
+- **优化**：默认深色模式（仍可点 🌓 切换浅色）
+- **优化**：README 增加「相关工具」跳转链接（去 AI 绘画提示词超市）
 
 ### v1.0.0
 - **新增**：首个版本 —— 8 槽位自然语言提示词拼装 + 权重 / 随机 / 收藏 / 预设 / 深色模式 / 三级兜底复制
