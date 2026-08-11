@@ -99,6 +99,7 @@
   <div class="spacer"></div>
   <select id="presetSel"><option value="">预设</option></select>
   <button id="savePresetBtn" title="保存当前组合为预设">💾 存预设</button>
+  <button id="delPresetBtn" title="删除当前选中的预设">🗑 删预设</button>
   <button id="randBtn" title="每个槽位随机抽一条">🎲 灵感随机</button>
   <button id="favOnlyBtn" title="只看已收藏短语">★ 仅看收藏</button>
   <button id="themeBtn" title="切换深浅色">🌓</button>
@@ -459,6 +460,15 @@ $('presetSel').onchange=()=>{
   sel.clear();
   flat.forEach(p=>{ const arr=sel.get(p.i)||[]; arr.push({en:p.en,zh:p.zh,w:p.w}); sel.set(p.i,arr); });
   refresh();
+};
+$('delPresetBtn').onclick=()=>{
+  const name=$('presetSel').value;
+  if(!name){ flash('先在预设下拉里选中要删的预设'); return; }
+  const presets=JSON.parse(localStorage.getItem('nlp_presets')||'{}');
+  delete presets[name];
+  localStorage.setItem('nlp_presets',JSON.stringify(presets));
+  renderPresets();
+  flash('✅ 已删除预设「'+name+'」');
 };
 function renderPresets(selName){
   const presets=JSON.parse(localStorage.getItem('nlp_presets')||'{}');
