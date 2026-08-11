@@ -42,6 +42,12 @@ Open `index.html`, pick a slot on the left, click phrases in the middle, and the
 
 ## Changelog
 
+### v1.3.0
+- **Added**: imported the supermarket's curated common tags and converted them into natural-language phrases (~245), adapted per slot
+- **Added**: new subcategories — subject "count", action "expression", lens/style "art style"
+- **Added**: full NSFW coverage — 38 adult action/state phrases fully merged into "seductive / NSFW" and "nude / NSFW"
+- **Adjusted**: removed the 13MB full-library search, back to lightweight (~50KB), semantic content with cleaner categories
+
 ### v1.2.0
 - **Added**: full tag library — 321,450 Danbooru Chinese–English tags embedded; search any tag in the top search box and add it to the end of the prompt (file grows to ~14MB, same class as the supermarket)
 
