@@ -42,6 +42,9 @@ Open `index.html`, pick a slot on the left, click phrases in the middle, and the
 
 ## Changelog
 
+### v1.2.0
+- **Added**: full tag library — 321,450 Danbooru Chinese–English tags embedded; search any tag in the top search box and add it to the end of the prompt (file grows to ~14MB, same class as the supermarket)
+
 ### v1.1.0
 - **Added**: subcategories — each slot filters by subcategory (e.g. clothing → dresses / tops / outerwear / nude…)
 - **Added**: negative-words slot (⑨) — click to add to the negative box, with sensible pre-selected anti-artifact defaults
