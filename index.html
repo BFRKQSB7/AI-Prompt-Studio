@@ -354,6 +354,7 @@ function buildSystemPrompt(mode,lv,refBlock){
      +'4. 用短关键词短语，不要完整句子、不要从句、不要否定句。\n'
      +'5. 主体描述控制在 75 token 内；质量词（8k, detailed skin texture, professional photography）放末尾。\n'
      +'6. 直白度：'+lvLine+'\n'
+     +'7. 英文用词必须来自上方词典或参考标签库给出的准确词，禁止自造变体（库里有 huge_breasts 就写 huge_breasts，别写 jumbo breasts 之类）。\n'
      +'词典：'+dictText+'\n'
      +'示例：\n'
      +'用户：一个年轻女人躺在床上，裸体，张开双腿，露出湿润的小穴，看着镜头，眼神勾人，室内暖光，电影感\n'
@@ -368,6 +369,7 @@ function buildSystemPrompt(mode,lv,refBlock){
      +'4. NSFW 用显式标签（nude, spread legs, pussy, large breasts, nipples），禁止委婉。\n'
      +'5. 主体标签在前，场景/细节在后。\n'
      +'6. 直白度：'+lvLine+'\n'
+     +'7. 英文标签只允许用上方词典或参考标签库给出的词，禁止自造变体（库里有 huge_breasts 就写 huge_breasts，别写 jumbo breasts）。\n'
      +'词典：'+dictText+'\n'
      +'示例：\n'
      +'用户：一个女孩裸体站着，大胸，乳头立起，双腿张开，看着镜头，长发，红瞳，详细背景，杰作\n'
@@ -388,6 +390,24 @@ function buildNegSystemPrompt(mode){
 const NEG_FILTER=/\b(censorship|censored|inappropriate content|explicit content|nsfw|safe for work|sfw|moderation|age restriction|content warning)\b/gi;
 function sanitizeNeg(t){
   return t.replace(NEG_FILTER,'').replace(/,{2,}/g,',').replace(/,\s*$/,'').replace(/^\s*,/,'').replace(/\s{2,}/g,' ').trim();
+}
+/* ============ SDXL 正向标签后筛选：过全量库，剔除不在库的词条 ============ */
+const KEEP_QUALITY=new Set(['masterpiece','best quality','amazing quality','newest','safe','absurdres','highres','very detailed','detailed face','detailed background','score_9','score_8','score_7','score_6','score_5','score_4','8k','4k','ultra detailed','highly detailed','ultra-detailed','highly-detailed','best quality','detailed illustration','hires','monochrome']);
+let FULL_EN_SET=null;
+function buildFullEnSet(){
+  if(FULL_EN_SET||!FULL_LIB) return;
+  FULL_EN_SET=new Set();
+  for(const e of FULL_LIB){ FULL_EN_SET.add(e[1].toLowerCase().replace(/ /g,'_')); }
+}
+function sanitizeTags(text){
+  if(!text||!FULL_LIB) return text;
+  buildFullEnSet();
+  return text.split(',').map(t=>{
+    const raw=t.trim(); if(!raw) return '';
+    if(FULL_EN_SET.has(raw.toLowerCase().replace(/ /g,'_'))) return raw;
+    if(KEEP_QUALITY.has(raw.toLowerCase())) return raw;
+    return '';
+  }).filter(Boolean).join(', ');
 }
 
 /* ============ 提示词库参考（精选 / 全量检索） ============ */
@@ -688,6 +708,7 @@ async function doSdxl(base,model,key,req){
     const d=await res.json();
     out.value=(d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content||'').trim();
     if(!out.value) throw new Error('空响应');
+    if(mode==='tag'&&FULL_LIB) out.value=sanitizeTags(out.value);
     const neg=$('neg');
     neg.value='生成中…';
     try{
