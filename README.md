@@ -1,6 +1,6 @@
 # AI 提示词工坊（AI Prompt Studio）
 
-![](https://img.shields.io/badge/version-v1.1.0-blue)
+![](https://img.shields.io/badge/version-v1.2.0-blue)
 
 **中文简体** | [**English**](./docs/en/README.md)
 

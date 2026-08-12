@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI 提示词工坊 v1.1.0 — 中文需求 → SDXL 直白提示词 / MiniMax H3 视频提示词</title>
+<title>AI 提示词工坊 v1.2.0 — 中文需求 → SDXL 直白提示词 / MiniMax H3 视频提示词</title>
 <style>
 :root{--bg:#0f1115;--panel:#171a21;--panel2:#1d2129;--border:#2a2f3a;--text:#e6e8ee;--dim:#9aa2b1;--acc:#4f8cff;--ok:#3ecf8e;--bad:#ff6b6b}
 [data-theme="light"]{--bg:#f5f6f8;--panel:#ffffff;--panel2:#f0f1f4;--border:#dfe2e8;--text:#1c1f26;--dim:#6a7280;--acc:#2f6fe4;--ok:#1aa873;--bad:#d64545}
@@ -55,6 +55,19 @@ input[type=range]{width:100%;accent-color:var(--acc)}
 .hint b{color:var(--acc);font-weight:700}
 .hint code{background:var(--panel2);padding:1px 5px;border-radius:4px}
 .lib-status{font-size:12px;color:var(--dim);margin-top:8px}
+.tag-caps{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.tcap{position:relative;display:inline-flex;flex-direction:column;align-items:center;padding:4px 10px;border:1px solid var(--border);border-radius:8px;background:var(--panel2);font-size:12px;cursor:pointer;user-select:none}
+.tcap:hover{border-color:var(--acc)}
+.tcap-en{color:var(--text);line-height:1.3}
+.tcap-zh{color:var(--dim);font-size:11px;line-height:1.2;margin-top:1px}
+.tcap-unk{border-style:dashed;border-color:rgba(255,107,107,.5)}
+.tcap-unkzh{color:var(--bad)}
+.tcap-w{color:var(--acc);font-size:10px;margin-left:3px}
+.tcap-x{position:absolute;top:-6px;right:-6px;width:16px;height:16px;line-height:14px;text-align:center;border-radius:50%;background:var(--bad);color:#fff;font-size:11px;cursor:pointer;opacity:0;transition:opacity .15s}
+.tcap:hover .tcap-x{opacity:1}
+.tcap-wedit{position:fixed;z-index:99;display:flex;align-items:center;gap:4px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:6px;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+.tcap-wedit button{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer}
+.tcap-wedit input{width:56px;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 6px;font-size:12px}
 .risk{font-size:12px;color:var(--bad);background:rgba(255,107,107,.07);border:1px solid rgba(255,107,107,.35);border-radius:8px;padding:8px 10px;margin-top:14px;display:none}
 @media (max-width:760px){
   .wrap{padding:14px 10px 44px}
@@ -71,7 +84,7 @@ footer{margin-top:26px;font-size:12px;color:var(--dim);text-align:center}
 <body>
 <div class="wrap">
   <header>
-    <h1>AI 提示词工坊 <span class="ver">v1.1.0</span></h1>
+    <h1>AI 提示词工坊 <span class="ver">v1.2.0</span></h1>
     <span id="status" class="status"><span class="dot"></span>检测本地后端…</span>
     <span class="spacer"></span>
     <button class="theme-btn" id="themeBtn">🌓 切换浅色</button>
@@ -206,11 +219,13 @@ footer{margin-top:26px;font-size:12px;color:var(--dim);text-align:center}
     <div id="sdxlOut">
       <label for="out">生成的提示词（复制使用）</label>
       <textarea id="out" readonly placeholder="转换结果会显示在这里…"></textarea>
+      <div class="tag-caps" id="tagCaps"></div>
       <div class="btns">
         <button class="btn ghost" id="copyBtn">📋 复制</button>
       </div>
       <label for="neg" style="margin-top:16px">负面提示词（Negative Prompt，复制使用）</label>
       <textarea id="neg" readonly placeholder="负面提示词：本地模型自动填通用默认；在线模型实时生成…"></textarea>
+      <div class="tag-caps" id="negCaps"></div>
       <div class="btns">
         <button class="btn ghost" id="copyNegBtn">📋 复制负面</button>
       </div>
@@ -227,7 +242,7 @@ footer{margin-top:26px;font-size:12px;color:var(--dim);text-align:center}
     </div>
   </div>
 
-  <footer>直白词典内置 · 提示词库参考(精选/16.7万) · SDXL 生图 + H3 视频 · v1.1.0</footer>
+  <footer>直白词典内置 · 提示词库参考(精选/16.7万) · SDXL 生图 + H3 视频 · v1.2.0</footer>
 </div>
 
 <script>
@@ -408,6 +423,87 @@ function sanitizeTags(text){
     if(KEEP_QUALITY.has(raw.toLowerCase())) return raw;
     return '';
   }).filter(Boolean).join(', ');
+}
+/* ============ 标签中文胶囊（参考标签超市；×删除/右键权重/悬停，不实现正负交换） ============ */
+function escapeHtml(s){ return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+const NEG_ZH={'easynegative':'EasyNegative(通用负面)','bad-hands':'坏手','lowres':'低分辨率','low_quality':'低质量','worst_quality':'最差质量','normal_quality':'普通质量','bad_anatomy':'解剖错误','bad_hands':'手部损坏','bad_fingers':'坏手指','missing_fingers':'缺手指','extra_fingers':'多余手指','extra_digits':'多余手指','fewer_digits':'缺手指','extra_limbs':'多余肢体','extra_arms':'多余手臂','extra_legs':'多余腿','fused_limbs':'肢体融合','mutated_hands':'变异手','poorly_drawn_hands':'手部崩坏','poorly_drawn_face':'脸部崩坏','poorly_drawn_feet':'脚部崩坏','poorly_drawn_body':'身体崩坏','deformed':'畸形','distorted':'扭曲','blurry':'模糊','jpeg_artifacts':'JPEG伪影','watermark':'水印','signature':'签名','username':'用户名','text':'文字','error':'错误','cropped':'裁切','ugly':'丑','morbid':'病态','multiple_breasts':'多乳房','malformed_limbs':'畸形肢体','gross_proportions':'比例失调','long_neck':'长脖子','duplicate':'重复','monochrome':'单色','greyscale':'灰度','censored':'打码','noise':'噪点','grainy':'颗粒感','logo':'Logo','mutation':'突变','disfigured':'毁容','out_of_frame':'出画','bad_composition':'构图差','bad_lighting':'光线差','bad_proportions':'比例失调','missing_arms':'缺手臂','missing_legs':'缺腿','extra_eyes':'多余眼睛','extra_head':'多头','extra_nipples':'多余乳头','malformed_feet':'畸形脚','worst quality':'最差质量','low quality':'低质量','bad anatomy':'解剖错误','bad hands':'手部损坏','missing fingers':'缺手指','extra digits':'多余手指','fewer digits':'缺手指','extra limbs':'多余肢体','jpeg artifacts':'JPEG伪影','poorly drawn hands':'手部崩坏','poorly drawn face':'脸部崩坏','poorly drawn body':'身体崩坏','multiple views':'多视图'};
+let EN_ZH=null;
+function buildEnZh(){
+  if(EN_ZH) return;
+  EN_ZH=new Map();
+  for(const[en,zh]of Object.entries(NEG_ZH)) EN_ZH.set(en.toLowerCase().replace(/ /g,'_'),zh);
+  for(const[zh,ens]of LIB_CUR){ for(const en of ens){ const k=en.toLowerCase().replace(/ /g,'_'); if(!EN_ZH.has(k)) EN_ZH.set(k,zh); } }
+  if(FULL_LIB){ for(const e of FULL_LIB){ const k=e[1].toLowerCase().replace(/ /g,'_'); if(!EN_ZH.has(k)) EN_ZH.set(k,e[0]); } }
+}
+function splitTopLevel(text){
+  const out=[]; let cur='', depth=0;
+  for(const ch of text){
+    if(ch==='(') depth++;
+    else if(ch===')') depth--;
+    if(ch===','&&depth===0){ out.push(cur.trim()); cur=''; } else cur+=ch;
+  }
+  if(cur.trim()) out.push(cur.trim());
+  return out;
+}
+function parseSeg(seg){
+  let m=seg.match(/^\((.*):([0-9.]+)\)$/); if(m) return {tag:m[1].trim(), weight:m[2]};
+  m=seg.match(/^\((.*)\)$/); if(m) return {tag:m[1].trim(), weight:null};
+  return {tag:seg, weight:null};
+}
+function serializeSegs(segs){ return segs.map(s=>typeof s==='string'?s:(s.weight!=null?`(${s.tag}:${s.weight})`:s.tag)).join(', '); }
+function renderTagCaps(text, outId){
+  const box=$(outId==='neg'?'negCaps':'tagCaps');
+  box.innerHTML='';
+  if(!text) return;
+  buildEnZh();
+  const segs=splitTopLevel(text);
+  box.innerHTML=segs.map((seg,i)=>{
+    const {tag,weight}=parseSeg(seg);
+    const zh=EN_ZH.get(tag.toLowerCase().replace(/ /g,'_'));
+    const wTxt=weight?`<span class="tcap-w">:${weight}</span>`:'';
+    return `<span class="tcap ${zh?'':'tcap-unk'}" data-i="${i}" title="右键调权重"><span class="tcap-en">${escapeHtml(tag)}${wTxt}</span><span class="tcap-zh ${zh?'':'tcap-unkzh'}">${escapeHtml(zh||'? 未匹配')}</span><span class="tcap-x" title="删除">×</span></span>`;
+  }).join('');
+  box.querySelectorAll('.tcap-x').forEach(x=>{
+    x.addEventListener('click',ev=>{
+      ev.stopPropagation();
+      const segs=splitTopLevel($(outId).value); segs.splice(+x.parentElement.dataset.i,1);
+      $(outId).value=serializeSegs(segs);
+      renderTagCaps($(outId).value, outId);
+    });
+  });
+  box.querySelectorAll('.tcap').forEach(cap=>{
+    cap.addEventListener('contextmenu',ev=>{ ev.preventDefault(); ev.stopPropagation(); showWeightEditor(cap, outId); });
+  });
+}
+function showWeightEditor(cap, outId){
+  const old=document.querySelector('.tcap-wedit'); if(old) old.remove();
+  const ed=document.createElement('div');
+  ed.className='tcap-wedit';
+  const segs=splitTopLevel($(outId).value);
+  const {tag,weight}=parseSeg(segs[+cap.dataset.i]||'');
+  const cur=weight||'1';
+  ed.innerHTML=`<button data-d="-0.1">−</button><input type="number" step="0.1" min="0" value="${cur}"><button data-d="0.1">+</button><button data-r="1">重置</button>`;
+  const rect=cap.getBoundingClientRect();
+  ed.style.left=Math.min(Math.max(rect.left,4), window.innerWidth-230)+'px';
+  ed.style.top=(rect.bottom+4)+'px';
+  document.body.appendChild(ed);
+  const commit=()=>{
+    const v=ed.querySelector('input').value;
+    const segs2=splitTopLevel($(outId).value);
+    const i=+cap.dataset.i;
+    const p=parseSeg(segs2[i]||'');
+    p.weight=(v&&+v!==1)?+v:null;
+    segs2[i]=serializeSegs([p]);
+    $(outId).value=serializeSegs(segs2);
+    renderTagCaps($(outId).value, outId);
+  };
+  ed.querySelectorAll('[data-d]').forEach(b=>b.addEventListener('click',()=>{
+    const input=ed.querySelector('input');
+    input.value=(+(input.value||1)+(+b.dataset.d)).toFixed(1);
+  }));
+  ed.querySelector('[data-r]').addEventListener('click',()=>{ ed.querySelector('input').value='1'; commit(); });
+  ed.querySelector('input').addEventListener('change',commit);
+  document.addEventListener('mousedown',function h(e){ if(!ed.contains(e.target)){ commit(); ed.remove(); document.removeEventListener('mousedown',h); } });
 }
 
 /* ============ 提示词库参考（精选 / 全量检索） ============ */
@@ -709,6 +805,7 @@ async function doSdxl(base,model,key,req){
     out.value=(d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content||'').trim();
     if(!out.value) throw new Error('空响应');
     if(mode==='tag'&&FULL_LIB) out.value=sanitizeTags(out.value);
+    if(mode==='tag') renderTagCaps(out.value,'out'); else { $('tagCaps').innerHTML=''; $('negCaps').innerHTML=''; }
     const neg=$('neg');
     neg.value='生成中…';
     try{
@@ -723,9 +820,10 @@ async function doSdxl(base,model,key,req){
           neg.value=sanitizeNeg(nv)||(mode==='tag'?DEFAULT_NEG_TAG:DEFAULT_NEG_NL);
         }else{ neg.value=mode==='tag'?DEFAULT_NEG_TAG:DEFAULT_NEG_NL; }
       }catch(e2){ neg.value=mode==='tag'?DEFAULT_NEG_TAG:DEFAULT_NEG_NL; }
+    renderTagCaps(neg.value,'neg');
   }catch(e){
     err.textContent='转换失败：'+e.message+'（本地源需先启动 llama-server；在线源检查 Key/网络）';
-    err.style.display='block'; out.value=''; $('neg').value='';
+    err.style.display='block'; out.value=''; $('neg').value=''; $('tagCaps').innerHTML=''; $('negCaps').innerHTML='';
   }
 }
 

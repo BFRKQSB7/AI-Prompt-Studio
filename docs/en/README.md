@@ -2,7 +2,7 @@
 
 [**中文**](../README.md) | **English**
 
-![](https://img.shields.io/badge/version-v1.1.0-blue)
+![](https://img.shields.io/badge/version-v1.2.0-blue)
 
 Converts Chinese prompts (free-form scene descriptions, NSFW welcome) into English prompts. Single-file, zero dependencies, runs in the browser:
 
