@@ -1,5 +1,7 @@
 # SD 提示词转换器（Prompt Converter）
 
+![](https://img.shields.io/badge/version-v1.0.0-blue)
+
 **中文简体** | [**English**](./docs/en/README.md)
 
 把中文需求（自由描述画面，NSFW 也直接写）自动转成 **Stable Diffusion 直白英文提示词**。单文件、零依赖，浏览器打开即用。
