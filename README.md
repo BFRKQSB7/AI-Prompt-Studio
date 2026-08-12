@@ -50,12 +50,12 @@ python opencode_proxy.py
 - **本地模型**（负担重）：自动填通用默认负面（`easynegative, bad-hands, ...`）
 - **在线模型**：根据正向提示词实时生成匹配的负面提示词
 
-## 部署到 GitHub Pages
+## 在线使用
 
-把 `index.html` 放仓库根目录即可（Pages 自动托管为首页）。注意：
+本项目已托管到 GitHub Pages：**https://bfrkqsb7.github.io/sd-prompt-converter/**
 
-- **Pages 上在线源**：OpenAI / DeepSeek 可直接用（带 CORS 头）
-- **Pages 上 opencode**：因 CORS + 浏览器私有网络限制，**建议下载本地使用**（`index.html` + `opencode_proxy.py`），不要在托管页直接连 opencode
+- **OpenAI / DeepSeek**：在线版可直接用（官方 API 带 CORS 头）
+- **本地 llama / opencode**：在线版无法直连（CORS / 浏览器私有网络限制）——下载 `index.html`（+ `opencode_proxy.py`）本地打开，功能完整
 
 ## License
 

@@ -48,12 +48,12 @@ Then in "custom": Base URL `http://127.0.0.1:7898/v1`, model `deepseek-v4-flash`
 - **Local models** (heavy load): auto-fill a universal default negative (`easynegative, bad-hands, ...`)
 - **Online models**: generate a matching negative in real time from the positive prompt
 
-## Deploy to GitHub Pages
+## Online use
 
-Put `index.html` in the repo root (Pages serves it as the home page). Notes:
+This project is hosted on GitHub Pages: **https://bfrkqsb7.github.io/sd-prompt-converter/**
 
-- **Online sources on Pages**: OpenAI / DeepSeek work directly (CORS headers present)
-- **opencode on Pages**: due to CORS and browser private-network restrictions, **download and run locally** (`index.html` + `opencode_proxy.py`) instead of calling opencode from the hosted page
+- **OpenAI / DeepSeek**: work directly on the hosted page (official APIs send CORS headers)
+- **Local llama / opencode**: cannot be reached from the hosted page (CORS / browser private-network restrictions) — download `index.html` (+ `opencode_proxy.py`) and open locally for full functionality
 
 ## License
 
