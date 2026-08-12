@@ -65,6 +65,7 @@ input[type=range]{width:100%;accent-color:var(--acc)}
 .tcap-w{color:var(--acc);font-size:10px;margin-left:3px}
 .tcap-x{position:absolute;top:-6px;right:-6px;width:16px;height:16px;line-height:14px;text-align:center;border-radius:50%;background:var(--bad);color:#fff;font-size:11px;cursor:pointer;opacity:0;transition:opacity .15s}
 .tcap:hover .tcap-x{opacity:1}
+.tcap-drag{outline:2px dashed var(--acc)}
 .tcap-wedit{position:fixed;z-index:99;display:flex;align-items:center;gap:4px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:6px;box-shadow:0 4px 12px rgba(0,0,0,.4)}
 .tcap-wedit button{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer}
 .tcap-wedit input{width:56px;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 6px;font-size:12px}
@@ -219,16 +220,16 @@ footer{margin-top:26px;font-size:12px;color:var(--dim);text-align:center}
     <div id="sdxlOut">
       <label for="out">生成的提示词（复制使用）</label>
       <textarea id="out" readonly placeholder="转换结果会显示在这里…"></textarea>
-      <div class="tag-caps" id="tagCaps"></div>
       <div class="btns">
         <button class="btn ghost" id="copyBtn">📋 复制</button>
       </div>
+      <div class="tag-caps" id="tagCaps"></div>
       <label for="neg" style="margin-top:16px">负面提示词（Negative Prompt，复制使用）</label>
       <textarea id="neg" readonly placeholder="负面提示词：本地模型自动填通用默认；在线模型实时生成…"></textarea>
-      <div class="tag-caps" id="negCaps"></div>
       <div class="btns">
         <button class="btn ghost" id="copyNegBtn">📋 复制负面</button>
       </div>
+      <div class="tag-caps" id="negCaps"></div>
       <div class="hint">
         本地 llama：需先在本机启动一个 OpenAI 兼容的 llama-server（地址在上方 Base URL 中配置）。<b>上下文建议</b>：SDXL 生图 ≥8192，H3 视频 ≥8192（负面提示词也由模型生成，需预留输出空间）；全量库 16.7万条仅在浏览器内存检索（首次约 7.6MB 下载），每轮只发 ≤80 条命中，<b>不占模型上下文</b>。OpenAI/DeepSeek：填 API Key 即可直连（本地存储）。
       </div>
@@ -461,7 +462,7 @@ function renderTagCaps(text, outId){
     const {tag,weight}=parseSeg(seg);
     const zh=EN_ZH.get(tag.toLowerCase().replace(/ /g,'_'));
     const wTxt=weight?`<span class="tcap-w">:${weight}</span>`:'';
-    return `<span class="tcap ${zh?'':'tcap-unk'}" data-i="${i}" title="右键调权重"><span class="tcap-en">${escapeHtml(tag)}${wTxt}</span><span class="tcap-zh ${zh?'':'tcap-unkzh'}">${escapeHtml(zh||'? 未匹配')}</span><span class="tcap-x" title="删除">×</span></span>`;
+    return `<span class="tcap ${zh?'':'tcap-unk'}" data-i="${i}" title="右键调权重"><span class="tcap-en">${escapeHtml(tag)}${wTxt}</span><span class="tcap-zh ${zh?'':'tcap-unkzh'}">${escapeHtml(zh||'? 未匹配')}</span><span class="tcap-x" title="删除" draggable="false">×</span></span>`;
   }).join('');
   box.querySelectorAll('.tcap-x').forEach(x=>{
     x.addEventListener('click',ev=>{
@@ -473,6 +474,30 @@ function renderTagCaps(text, outId){
   });
   box.querySelectorAll('.tcap').forEach(cap=>{
     cap.addEventListener('contextmenu',ev=>{ ev.preventDefault(); ev.stopPropagation(); showWeightEditor(cap, outId); });
+  });
+  makeDraggable(box, outId);
+}
+function makeDraggable(box, outId){
+  let dragIdx=null;
+  box.querySelectorAll('.tcap').forEach(cap=>{
+    cap.draggable=true;
+    cap.addEventListener('dragstart',ev=>{
+      dragIdx=+cap.dataset.i; ev.dataTransfer.effectAllowed='move';
+      cap.classList.add('tcap-drag');
+      setTimeout(()=>cap.style.opacity='0.4',0);
+    });
+    cap.addEventListener('dragover',ev=>{ ev.preventDefault(); });
+    cap.addEventListener('drop',ev=>{
+      ev.preventDefault();
+      const dropIdx=+cap.dataset.i;
+      if(dragIdx==null||dragIdx===dropIdx) return;
+      const segs=splitTopLevel($(outId).value);
+      const moved=segs.splice(dragIdx,1)[0];
+      segs.splice(dropIdx,0,moved);
+      $(outId).value=serializeSegs(segs);
+      renderTagCaps($(outId).value, outId);
+    });
+    cap.addEventListener('dragend',()=>{ cap.style.opacity=''; cap.classList.remove('tcap-drag'); dragIdx=null; });
   });
 }
 function showWeightEditor(cap, outId){
