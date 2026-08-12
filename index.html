@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>提示词转换器 — 中文需求 → SDXL 直白提示词</title>
+<title>AI 提示词工坊 v1.1.0 — 中文需求 → SDXL 直白提示词 / MiniMax H3 视频提示词</title>
 <style>
 :root{--bg:#0f1115;--panel:#171a21;--panel2:#1d2129;--border:#2a2f3a;--text:#e6e8ee;--dim:#9aa2b1;--acc:#4f8cff;--ok:#3ecf8e;--bad:#ff6b6b}
 [data-theme="light"]{--bg:#f5f6f8;--panel:#ffffff;--panel2:#f0f1f4;--border:#dfe2e8;--text:#1c1f26;--dim:#6a7280;--acc:#2f6fe4;--ok:#1aa873;--bad:#d64545}
@@ -12,16 +12,22 @@ body{background:var(--bg);color:var(--text);font-family:"Microsoft YaHei","PingF
 .wrap{max-width:920px;margin:0 auto;padding:24px 20px 60px}
 header{display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap}
 h1{font-size:20px;font-weight:700}
+.ver{font-size:12px;color:var(--dim);font-weight:400;margin-left:2px}
 .spacer{flex:1}
 .status{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:3px 10px;border-radius:99px;background:var(--panel2);color:var(--dim);border:1px solid var(--border)}
 .status .dot{width:8px;height:8px;border-radius:50%;background:#555}
 .status.ok .dot{background:var(--ok)} .status.bad .dot{background:var(--bad)}
 .theme-btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:13px}
+.tabs{display:flex;gap:8px;margin-bottom:14px}
+.tab{padding:8px 16px;border-radius:8px;background:var(--panel2);border:1px solid var(--border);color:var(--dim);cursor:pointer;font-size:14px;user-select:none}
+.tab.on{color:var(--acc);border-color:var(--acc);background:rgba(79,140,255,.12);font-weight:600}
 .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px}
 label{display:block;font-size:13px;color:var(--dim);margin-bottom:8px}
 textarea{width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:12px;font-size:14px;resize:vertical;font-family:inherit}
 textarea#req{min-height:90px}
 textarea#out{min-height:130px;font-family:Consolas,Menlo,monospace;font-size:13px}
+textarea#out3{min-height:220px;font-family:Consolas,Menlo,monospace;font-size:13px}
+textarea#h3Refs{min-height:56px}
 .grid{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:end}
 .grid label{display:block;font-size:12px;color:var(--dim);margin-bottom:4px}
 input,select{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px}
@@ -33,6 +39,12 @@ input,select{background:var(--panel2);border:1px solid var(--border);color:var(-
 .radio small{display:block;color:var(--dim);font-weight:400;margin-top:2px}
 input[type=range]{width:100%;accent-color:var(--acc)}
 .slider-val{font-size:13px;color:var(--acc);font-weight:600}
+.nsfw-slider{position:relative;height:42px;cursor:pointer;user-select:none;touch-action:none}
+.nsfw-track{position:absolute;left:8px;right:8px;top:14px;height:4px;border-radius:2px;background:var(--panel2);border:1px solid var(--border)}
+.nsfw-fill{position:absolute;left:8px;top:14px;height:4px;border-radius:2px;background:var(--acc);width:0}
+.nsfw-thumb{position:absolute;top:7px;width:16px;height:16px;border-radius:50%;background:var(--acc);border:2px solid #fff;transform:translateX(-50%);box-shadow:0 1px 3px rgba(0,0,0,.4);left:0}
+.nsfw-scale{position:absolute;left:8px;right:8px;top:27px;height:14px}
+.nsfw-scale span{position:absolute;transform:translateX(-50%);font-size:11px;color:var(--dim);white-space:nowrap;cursor:pointer}
 .btns{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
 .btn{flex:1;min-width:140px;padding:11px;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;color:#fff;transition:opacity .15s}
 .btn:hover{opacity:.88}
@@ -40,18 +52,35 @@ input[type=range]{width:100%;accent-color:var(--acc)}
 .btn.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--border);font-weight:400}
 .err{color:var(--bad);font-size:13px;margin-top:10px;display:none}
 .hint{font-size:12px;color:var(--dim);margin-top:10px}
+.hint b{color:var(--acc);font-weight:700}
 .hint code{background:var(--panel2);padding:1px 5px;border-radius:4px}
+.lib-status{font-size:12px;color:var(--dim);margin-top:8px}
+.risk{font-size:12px;color:var(--bad);background:rgba(255,107,107,.07);border:1px solid rgba(255,107,107,.35);border-radius:8px;padding:8px 10px;margin-top:14px;display:none}
+@media (max-width:760px){
+  .wrap{padding:14px 10px 44px}
+  .grid{grid-template-columns:1fr;gap:8px}
+  .tabs{flex-wrap:wrap}
+  .tab{flex:1;min-width:110px;text-align:center}
+  .radio{min-width:calc(50% - 6px)}
+  .btns .btn{min-width:100%}
+  .status{font-size:11px}
+}
 footer{margin-top:26px;font-size:12px;color:var(--dim);text-align:center}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>提示词转换器</h1>
+    <h1>AI 提示词工坊 <span class="ver">v1.1.0</span></h1>
     <span id="status" class="status"><span class="dot"></span>检测本地后端…</span>
     <span class="spacer"></span>
     <button class="theme-btn" id="themeBtn">🌓 切换浅色</button>
   </header>
+
+  <div class="tabs" id="appTabs">
+    <div class="tab on" data-app="sdxl">🎨 SDXL 生图</div>
+    <div class="tab" data-app="h3">🎬 H3 视频</div>
+  </div>
 
   <div class="card">
     <div class="grid">
@@ -68,25 +97,15 @@ footer{margin-top:26px;font-size:12px;color:var(--dim);text-align:center}
           <button type="button" id="loadModels" style="flex:0 0 auto;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer">📂 载入模型列表</button>
         </div>
       </div>
-      <div><label>API Key（在线源必填）</label><input id="apiKey" type="password" placeholder="sk-..."></div>
+      <div style="grid-column:1/-1"><label>API Key（在线源必填）</label>
+        <input id="apiKey" type="password" placeholder="sk-..." style="width:100%">
+        <div class="hint" id="apiSite" style="margin-top:6px"></div>
+        <div class="risk" id="riskNote" style="margin-top:4px">⚠️ 在线 API 风险提示：使用在线源时，你输入的提示词（含 NSFW/隐私内容）会发送到第三方服务，可能被服务方记录或用于内容审核，请确认理解并自行承担相应风险后使用。API Key 仅保存在本机浏览器（localStorage），不会上传到任何服务器；本地模型源数据不出本机。<b>若 Key 不慎泄露，请及时到官网注销/重置（rotate）以防盗用。</b></div>
+      </div>
     </div>
 
-    <label for="req" style="margin-top:16px">中文需求（自由描述你要的画面，NSFW 也直接写）</label>
+    <label for="req" id="reqLab" style="margin-top:16px">中文需求（自由描述你要的画面，NSFW 也直接写）</label>
     <textarea id="req" placeholder="例：一个年轻女人躺在床上，裸体，张开双腿，露出湿润的小穴，看着镜头，眼神勾人，室内暖光，电影感"></textarea>
-
-    <div class="row">
-      <div class="seg">
-        <label>目标模型方言</label>
-        <div class="radios" id="modeRadios">
-          <div class="radio" data-mode="nl"><span>自然语言流</span><small>RealVis / Juggernaut</small></div>
-          <div class="radio on" data-mode="tag"><span>标签流</span><small>NoobAI / Pony / Manhwa</small></div>
-        </div>
-      </div>
-      <div class="seg">
-        <label>NSFW 直白度：<span class="slider-val" id="nsfwVal">直白</span></label>
-        <input type="range" id="nsfw" min="0" max="3" value="2" step="1">
-      </div>
-    </div>
 
     <div class="btns">
       <button class="btn primary" id="goBtn">转换 →</button>
@@ -95,23 +114,120 @@ footer{margin-top:26px;font-size:12px;color:var(--dim);text-align:center}
     <div class="err" id="err"></div>
   </div>
 
-  <div class="card">
-    <label for="out">生成的提示词（复制使用）</label>
-    <textarea id="out" readonly placeholder="转换结果会显示在这里…"></textarea>
-    <div class="btns">
-      <button class="btn ghost" id="copyBtn">📋 复制</button>
-    </div>
-    <label for="neg" style="margin-top:16px">负面提示词（Negative Prompt，复制使用）</label>
-    <textarea id="neg" readonly placeholder="负面提示词：本地模型自动填通用默认；在线模型实时生成…"></textarea>
-    <div class="btns">
-      <button class="btn ghost" id="copyNegBtn">📋 复制负面</button>
-    </div>
-    <div class="hint">
-      本地 llama：需先在本机启动一个 OpenAI 兼容的 llama-server（地址在上方 Base URL 中配置）。OpenAI/DeepSeek：填 API Key 即可直连（本地存储）。
+  <div id="sdxlPanel">
+    <div class="card">
+      <div class="row">
+        <div class="seg">
+          <label>目标模型方言</label>
+          <div class="radios" id="modeRadios">
+            <div class="radio" data-mode="nl"><span>自然语言流</span><small>RealVis / Juggernaut</small></div>
+            <div class="radio on" data-mode="tag"><span>标签流</span><small>NoobAI / Pony / Manhwa</small></div>
+          </div>
+        </div>
+        <div class="seg">
+          <label>NSFW 直白度：<span class="slider-val" id="nsfwVal">直白</span></label>
+          <input type="range" id="nsfw" min="0" max="3" value="2" step="1" style="display:none">
+          <div class="nsfw-slider" id="nsfwSlider">
+            <div class="nsfw-track"></div>
+            <div class="nsfw-fill" id="nsfwFill"></div>
+            <div class="nsfw-thumb" id="nsfwThumb"></div>
+            <div class="nsfw-scale">
+              <span data-v="0" style="left:0%">保守</span><span data-v="1" style="left:33.33%">标准</span><span data-v="2" style="left:66.67%">直白</span><span data-v="3" style="left:100%">高度直白</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="seg">
+          <label>提示词库参考</label>
+          <div class="radios" id="libRadios">
+            <div class="radio" data-lib="off">关</div>
+            <div class="radio on" data-lib="cur">精选库<small>内嵌 347 条常用</small></div>
+            <div class="radio" data-lib="full">全量库<small>16.7万条</small></div>
+          </div>
+          <div class="lib-status" id="libStatus">精选库：内嵌 347 条常用标签；全量库 16.7万条（约 7.6MB，首次联网加载，仅在浏览器内存检索，不占模型上下文）</div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <footer>直白词典内置为知识库 · 支持本地/OpenAI/DeepSeek · 转换走本地 llama 或在线 API · v1.0.0</footer>
+  <div id="h3Panel" style="display:none">
+    <div class="card">
+      <div class="row">
+        <div class="seg">
+          <label>生成模式（输入类型）</label>
+          <div class="radios" id="h3GenRadios">
+            <div class="radio on" data-gen="t2va"><span>T2VA</span><small>纯文字·试水/氛围</small></div>
+            <div class="radio" data-gen="i2va"><span>I2VA</span><small>首帧起手</small></div>
+            <div class="radio" data-gen="fl2va"><span>FL2VA</span><small>首尾帧插值</small></div>
+            <div class="radio" data-gen="l2va"><span>L2VA</span><small>尾帧收尾</small></div>
+            <div class="radio" data-gen="ref2va"><span>Ref2VA</span><small>参考一致性/音色</small></div>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="seg">
+          <label>内容风格</label>
+          <div class="radios" id="h3ModeRadios">
+            <div class="radio on" data-h3="drama"><span>文戏</span><small>关系转折 / 对白</small></div>
+            <div class="radio" data-h3="action"><span>武戏</span><small>高密度攻防</small></div>
+            <div class="radio" data-h3="grid"><span>九宫格</span><small>3×3 故事板</small></div>
+          </div>
+        </div>
+        <div class="seg">
+          <label>时长</label>
+          <select id="h3Dur" style="width:100%">
+            <option value="1">1 秒</option>
+            <option value="2">2 秒</option>
+            <option value="3">3 秒</option>
+            <option value="4">4 秒</option>
+            <option value="5">5 秒</option>
+            <option value="6">6 秒</option>
+            <option value="7">7 秒</option>
+            <option value="8">8 秒</option>
+            <option value="9">9 秒</option>
+            <option value="10">10 秒</option>
+            <option value="11">11 秒</option>
+            <option value="12">12 秒</option>
+            <option value="13">13 秒</option>
+            <option value="14">14 秒</option>
+            <option value="15" selected>15 秒</option>
+          </select>
+        </div>
+      </div>
+      <label for="h3Refs" id="h3RefsLab" style="margin-top:14px">参考图片文字描述（可选，用文字说明每张图的用途，无需上传图片）</label>
+      <textarea id="h3Refs" placeholder="主角身份与服装参考&#10;对手身份与装备参考&#10;场景与光影参考"></textarea>
+      <div class="hint"><b>输出英文 H3 结构化提示词</b>（本地权重端官方格式：base 三字段 integrated_multimodal_description / overall_soundscape / non_diegetic_music，Ref2VA 六段），<b>粘贴进 MiniMax H3 工作流的 prompt 输入</b>。<b>官方输出时长下限 4 秒</b>，1-3 秒仅供测试/特殊需求。生成模式决定输入与提示词结构（T2VA=纯文字、I2VA=首帧起步、FL2VA=首尾帧插值、L2VA=尾帧反推、Ref2VA=角色一致性+音色+对嘴型）；内容风格决定叙事/动作编排。<b>九宫格</b>内容风格先生成 3×3 故事板出图提示词，出图后把实际画面描述回来再生成视频提示词。<b>成人内容会自动带上 H3 实测经验</b>（年龄双写 / 亚洲脸特征 / 声音少堆叠 / 出画收束等）。</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div id="sdxlOut">
+      <label for="out">生成的提示词（复制使用）</label>
+      <textarea id="out" readonly placeholder="转换结果会显示在这里…"></textarea>
+      <div class="btns">
+        <button class="btn ghost" id="copyBtn">📋 复制</button>
+      </div>
+      <label for="neg" style="margin-top:16px">负面提示词（Negative Prompt，复制使用）</label>
+      <textarea id="neg" readonly placeholder="负面提示词：本地模型自动填通用默认；在线模型实时生成…"></textarea>
+      <div class="btns">
+        <button class="btn ghost" id="copyNegBtn">📋 复制负面</button>
+      </div>
+      <div class="hint">
+        本地 llama：需先在本机启动一个 OpenAI 兼容的 llama-server（地址在上方 Base URL 中配置）。<b>上下文建议</b>：SDXL 生图 ≥8192，H3 视频 ≥8192（负面提示词也由模型生成，需预留输出空间）；全量库 16.7万条仅在浏览器内存检索（首次约 7.6MB 下载），每轮只发 ≤80 条命中，<b>不占模型上下文</b>。OpenAI/DeepSeek：填 API Key 即可直连（本地存储）。
+      </div>
+    </div>
+    <div id="h3Out" style="display:none">
+      <label for="out3">H3 视频提示词（英文，复制使用）</label>
+      <textarea id="out3" readonly placeholder="H3 视频提示词会显示在这里…"></textarea>
+      <div class="btns">
+        <button class="btn ghost" id="copy3Btn">📋 复制</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>直白词典内置 · 提示词库参考(精选/16.7万) · SDXL 生图 + H3 视频 · v1.1.0</footer>
 </div>
 
 <script>
@@ -123,7 +239,7 @@ const PROVIDERS={
   deepseek:{base:'https://api.deepseek.com/v1',model:'deepseek-chat'},
   custom:{base:'',model:''}
 };
-let cfg=JSON.parse(localStorage.getItem(LS)||'null')||{provider:'local',base:'',model:'',key:''};
+let cfg=JSON.parse(localStorage.getItem(LS)||'null')||{provider:'local',base:'',model:'',key:'',lib:'cur'};
 
 function ensureModelOption(v){
   const sel=$('modelName');
@@ -133,13 +249,17 @@ function ensureModelOption(v){
 }
 function applyCfg(){
   $('provider').value=cfg.provider;
+  $('riskNote').style.display=cfg.provider==='local'?'none':'block';
+  updateApiSite();
   $('baseUrl').value=cfg.base||PROVIDERS[cfg.provider].base;
   ensureModelOption(cfg.model||PROVIDERS[cfg.provider].model);
   $('apiKey').value=cfg.key||'';
+  if(cfg.lib&&['off','cur','full'].includes(cfg.lib)){ libMode=cfg.lib; }
+  syncLibUI();
   if(cfg.provider==='local') loadModels();
 }
 function saveCfg(){
-  cfg={provider:$('provider').value,base:$('baseUrl').value.trim(),model:$('modelName').value.trim(),key:$('apiKey').value.trim()};
+  cfg={provider:$('provider').value,base:$('baseUrl').value.trim(),model:$('modelName').value.trim(),key:$('apiKey').value.trim(),lib:libMode};
   localStorage.setItem(LS,JSON.stringify(cfg));
 }
 async function loadModels(){
@@ -158,15 +278,28 @@ async function loadModels(){
     if($('provider').value==='openai') ids=ids.filter(id=>!/embedding|whisper|audio|tts|davinci|realtime|moderation|rerank/i.test(id));
     if(!ids.length) throw new Error('接口没返回模型');
     sel.innerHTML='<option value="">（选择模型）</option>'+ids.map(id=>`<option value="${id}">${id}</option>`).join('');
+    sel.value=ids[0];
   }catch(e){
     sel.innerHTML='<option value="">（加载失败：'+e.message+'）</option>';
   }
+}
+const API_SITES={
+  openai:'OpenAI 官网（申请 API Key）：https://platform.openai.com',
+  deepseek:'DeepSeek 官网（申请 API Key）：https://platform.deepseek.com',
+  custom:'自定义：填写任意 OpenAI 兼容端点的 Base URL 与 Key',
+  local:''
+};
+function updateApiSite(){
+  const s=API_SITES[$('provider').value]||'';
+  $('apiSite').textContent=s;
 }
 $('provider').addEventListener('change',()=>{
   const p=$('provider').value;
   if(p!=='custom') $('baseUrl').value=PROVIDERS[p].base;
   if(p==='local'){ $('modelName').innerHTML='<option value="">（点击载入模型列表）</option>'; loadModels(); }
   else ensureModelOption(PROVIDERS[p].model);
+  $('riskNote').style.display=p==='local'?'none':'block';
+  updateApiSite();
   saveCfg();
 });
 $('baseUrl').addEventListener('change',saveCfg);
@@ -200,12 +333,16 @@ const DICT={
   '黑发':'black hair','金发':'blonde hair','银发':'silver hair','红瞳':'red eyes','蓝瞳':'blue eyes',
   '详细背景':'detailed background','详细脸':'detailed face','大胸':'large breasts','细腰':'thin waist'
 };
+
+/* ============ 精选库（内嵌，由超市 CURATED 分类 + 补充词生成） ============ */
+const CURATED_LIB=[["1个其他角色","1other"],["1个女孩","1girl"],["1个男孩","1boy"],["2个女孩","2girls"],["2个男孩","2boys"],["3D渲染","3d render"],["3P","threesome"],["3人女子","3girls"],["Q版","chibi"],["T恤","t-shirt"],["丝袜","stockings"],["中发","medium hair"],["中期","mid"],["中等乳房","medium breasts"],["丰满","voluptuous"],["丰满","curvy"],["丰满","plump"],["举手","raising hand"],["举起双手","arms up"],["乱发","messy hair"],["乳交","paizuri"],["乳头","nipples"],["乳晕","areola"],["乳汁","breast milk"],["乳沟","cleavage"],["交叉双臂","crossed arms"],["交叉手指","fingers crossed"],["亲吻","kissing"],["人群","crowd"],["伪娘/变装","crossdressing"],["伸展","stretching"],["低双马尾","low twintails"],["侧马尾","side ponytail"],["俯卧","prone"],["假阳具","dildo"],["做爱","sex"],["傲娇","tsundere"],["像素画","pixel art"],["兔女郎","bunny suit"],["全裸","fully nude"],["公园","park"],["内射","creampie"],["内衣","underwear"],["内裤","panties"],["写实","photorealistic"],["冷色调","cool color tone"],["刘海","bangs"],["剪刀手","peace sign"],["办公室","office"],["动漫风","anime style"],["勾引","seductive"],["半写实","semi-realistic"],["半闭眼","half-closed eyes"],["单人","solo"],["单色","monochrome"],["卧室","bedroom"],["卷发","curly hair"],["厨房","kitchen"],["叉腰","hands on hips"],["双手抱头","arms behind head"],["双辫","twin braids"],["双马尾","twintails"],["发光的眼睛","glowing eyes"],["发髻","bun"],["口交","fellatio"],["口部","oral"],["吊带袜","garter"],["后入式","doggy style"],["后宫","harem"],["吐舌","tongue out"],["否认","denial"],["呆毛","ahoge"],["呻吟","moaning"],["和服","kimono"],["哭泣","crying"],["啦啦队员","cheerleader"],["喘气","panting"],["四肢着地","all fours"],["四肢着地","on all fours"],["回头看","looking back"],["困惑","confused"],["图书馆","library"],["在床上","on bed"],["坏笑","smirk"],["坐床上","sitting on bed"],["坐着","sitting"],["城市","city"],["外套","coat"],["多人","multiple people"],["多色发","multicolored hair"],["多重高潮","multiple orgasm"],["夜晚","night"],["大拇指点赞","thumbs up"],["大眼睛","large eyes"],["大笑","laughing"],["天空","sky"],["夹克","jacket"],["女人","1girl"],["女仆","maid"],["女子","1girl"],["女孩","1girl"],["女式内衣","lingerie"],["妆容精致","detailed makeup"],["娇小","petite"],["安全(全年龄)","safe"],["室内","indoors"],["害羞","embarrassed"],["害羞","shy"],["宽胯","wide hips"],["射精","ejaculation"],["小巷","alley"],["少女","1girl"],["少年","1boy"],["屋顶","rooftop"],["山","mountain"],["巨乳","large breasts"],["巨乳","huge breasts"],["开腿","spread legs"],["异色瞳","heterochromia"],["张嘴","open mouth"],["张开双臂","spread arms"],["微笑","smile"],["微胖","chubby"],["心形手势","heart hands"],["快乐","happy"],["性爱","sex"],["性玩具","sex toy"],["悲伤","sad"],["惊人质量","amazing quality"],["惊讶","surprised"],["慌乱","flustered"],["戏剧性打光","dramatic lighting"],["户外","outdoors"],["手交","handjob"],["手套","gloves"],["手绘","hand-drawn"],["托下巴","hand on chin"],["披散的头发","hair down"],["抬腿","leg up"],["挤胸","breast squeeze"],["捂嘴","hand over mouth"],["接吻","kissing"],["掰开","spread pussy"],["揉胸","breast fondling"],["插入","penetration"],["插画","illustration"],["撅嘴","pout"],["教室","classroom"],["斜视","side glance"],["无表情","expressionless"],["无辜","innocent"],["日落","sunset"],["旧作","old"],["早期","early"],["晒痕","tan"],["景深","depth of field"],["暖色调","warm color tone"],["暴露装","revealing clothes"],["最佳质量","best quality"],["最新","newest"],["望向别处","looking away"],["束缚","bondage"],["条漫","webtoon"],["杰作","masterpiece"],["极长发","very long hair"],["极高分辨率","absurdres"],["柔光","soft lighting"],["校服","school uniform"],["棕发","brown hair"],["森林","forest"],["概念设计图","concept art"],["樱花","cherry blossoms"],["橙发","orange hair"],["死库水","school swimsuit"],["比基尼","bikini"],["毛衣","sweater"],["水下","underwater"],["水彩","watercolor"],["水手服","sailor uniform"],["汗湿皮肤","sweaty skin"],["沙漏身材","hourglass figure"],["油画","oil painting"],["泌乳","lactating"],["波波头","bob cut"],["波浪发","wavy hair"],["注视观众","looking at viewer"],["泪光","teary eyes"],["泪眼","teary eyes"],["泳装","swimsuit"],["浴室","bathroom"],["浴缸","bathtub"],["浴衣","yukata"],["海滩","beach"],["淋浴","shower"],["淫乱","slutty"],["淫乱表情","lewd expression"],["淫荡","lewd"],["深喉","deepthroat"],["渐变背景","gradient background"],["温泉","hot spring"],["温泉","onsen"],["游泳池","swimming pool"],["湿身","wet body"],["潮吹","squirting"],["潮红皮肤","flushed skin"],["灰发","grey hair"],["灰瞳","grey eyes"],["爱抚","caressing"],["牛奶","milk"],["玩弄头发","playing with hair"],["生气","angry"],["电影感","cinematic"],["男人","1boy"],["男子","1boy"],["男孩","1boy"],["病娇","yandere"],["白发","white hair"],["白天","day"],["白衬衫","white shirt"],["百褶裙","pleated skirt"],["皱眉","frown"],["直发","straight hair"],["眨眼","wink"],["眼泪","tears"],["眼神交流","eye contact"],["睫毛","eyelashes"],["睾丸","testicles"],["瞳孔放大","dilated pupils"],["短发","short hair"],["硬光","hard light"],["磨豆腐","grinding"],["窗边","by window"],["竖瞳","slit pupils"],["站着","standing"],["粉发","pink hair"],["粉瞳","pink eyes"],["粗腿","thick thighs"],["粗轮廓","thick outlines"],["精液","cum"],["精液","white cum"],["精细背景","detailed background"],["精细脸部","detailed face"],["素描","sketch"],["素颜","bare face"],["紧张","nervous"],["紧缚","shibari"],["紫发","purple hair"],["紫眼睛","purple eyes"],["红发","red hair"],["红眼睛","red eyes"],["纤细","slender"],["纱笼","sarong"],["线稿","lineart"],["细腰","narrow waist"],["细节丰富","very detailed"],["绿发","green hair"],["绿眼睛","green eyes"],["翘臀","big ass"],["肌肉","muscular"],["肛交","anal sex"],["肛门","anal"],["背心","tank top"],["背手","hands behind back"],["背景虚化","bokeh"],["脸红","blush"],["自慰","masturbation"],["自拍","selfie"],["自然光","natural light"],["舔","licking"],["舔阴","cunnilingus"],["苍白皮肤","pale skin"],["苗条","slim"],["草地","grass"],["蓝发","blue hair"],["蓝眼睛","blue eyes"],["蕾丝内衣","lace underwear"],["街道","street"],["裙子","skirt"],["裸","nude"],["裸体","nude"],["西装","suit"],["西装外套","blazer"],["贫乳","small breasts"],["贫乳","flat chest"],["赛璐珞上色","anime coloring"],["赛璐璐","cel shading"],["超大乳房","gigantic breasts"],["超短裤","short shorts"],["足交","footjob"],["足交","footjob"],["跨坐","straddling"],["跪姿","kneeling"],["跳蛋","vibrator"],["蹲姿","squatting"],["躺卧","lying"],["躺卧","reclining"],["躺床上","lying on bed"],["辫子","braid"],["过膝袜","thighhighs"],["运动服","track suit"],["近现代","recent"],["连帽衫","hoodie"],["连衣裙","one-piece"],["连衣裙","dress"],["连裤袜","pantyhose"],["逆光","backlight"],["逆光剪影","backlit silhouette"],["透视装","see-through"],["金发","blonde hair"],["钻头发","drill hair"],["银发","silver hair"],["锁骨","collarbone"],["长发","long hair"],["长沙发","couch"],["长腿","long legs"],["闪亮的眼神","sparkling eyes"],["闭眼","closed eyes"],["阳台","balcony"],["阴缝","genital slit"],["阴茎","penis"],["阴蒂","clitoris"],["阴道","vaginal"],["阿黑颜","ahegao"],["雨","rain"],["雪","snow"],["霓虹灯","neon light"],["露出","exhibitionism"],["露出阴部","exposed pussy"],["露肩","off-shoulder"],["露肩袖","detached sleeves"],["露胸","topless"],["露脐短衫","crop top"],["露齿而笑","grin"],["靴子","boots"],["韩漫风","manhwa"],["颜射","facial"],["马尾","ponytail"],["骑乘位","cowgirl position"],["高分辨率","highres"],["高对比度","high contrast"],["高潮","orgasm"],["高跟鞋","heels"],["鬓发","sidelocks"],["黄眼睛","yellow eyes"],["黑发","black hair"],["黑瞳","black eyes"],["黑肉","dark skin"]];
+
 const NSFW_LV={0:'保守：只用暗示词（nude, seductive），不写具体部位。',
                1:'标准：可写基础显式词（breasts, nude）。',
                2:'直白：写具体部位与动作（pussy, spread legs, nipples），有 NSFW 需求就写显式。',
                3:'高度直白：写最显式的词（wet pussy, penetration, cum），不回避任何部位词。'};
 
-function buildSystemPrompt(mode,lv){
+function buildSystemPrompt(mode,lv,refBlock){
   const dictText=Object.entries(DICT).map(([k,v])=>k+'→'+v).join(', ');
   const lvLine=NSFW_LV[lv];
   if(mode==='nl'){
@@ -220,7 +357,8 @@ function buildSystemPrompt(mode,lv){
      +'词典：'+dictText+'\n'
      +'示例：\n'
      +'用户：一个年轻女人躺在床上，裸体，张开双腿，露出湿润的小穴，看着镜头，眼神勾人，室内暖光，电影感\n'
-     +'输出：RAW photo, young woman lying on bed, completely nude, spread legs, wet pussy, looking at viewer, seductive eyes, warm indoor lighting, 85mm f/1.4, shallow depth of field, film grain, professional photography, 8k, detailed skin texture';
+     +'输出：RAW photo, young woman lying on bed, completely nude, spread legs, wet pussy, looking at viewer, seductive eyes, warm indoor lighting, 85mm f/1.4, shallow depth of field, film grain, professional photography, 8k, detailed skin texture'
+     +(refBlock?refBlock:'');
   }
   return '你是 SDXL 提示词转换器（Danbooru 标签模式）。把中文需求转成逗号分隔的英文 Danbooru 标签。\n'
      +'硬性规则：\n'
@@ -233,28 +371,276 @@ function buildSystemPrompt(mode,lv){
      +'词典：'+dictText+'\n'
      +'示例：\n'
      +'用户：一个女孩裸体站着，大胸，乳头立起，双腿张开，看着镜头，长发，红瞳，详细背景，杰作\n'
-     +'输出：masterpiece, best quality, newest, absurdres, 1girl, solo, nude, standing, spread legs, large breasts, erect nipples, looking at viewer, long hair, red eyes, detailed background';
+     +'输出：masterpiece, best quality, newest, absurdres, 1girl, solo, nude, standing, spread legs, large breasts, erect nipples, looking at viewer, long hair, red eyes, detailed background'
+     +(refBlock?refBlock:'');
 }
 
 /* ============ 负面提示词 ============ */
 const DEFAULT_NEG_TAG='easynegative, bad-hands, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digits, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, ugly, deformed, multiple views';
 const DEFAULT_NEG_NL='worst quality, low quality, lowres, bad anatomy, bad hands, missing fingers, extra digits, fewer digits, cropped, jpeg artifacts, signature, watermark, blurry, ugly, deformed, disfigured, text, error';
+const NEG_FORBID='负面清单只列画质/畸形/伪影/多余肢体/文字水印类术语。严禁把 censorship / explicit content / inappropriate content / nsfw / safe for work / moderation 这类审查或安全术语写进负面——它们会抑制露骨内容的生成。';
 function buildNegSystemPrompt(mode){
   if(mode==='tag'){
-    return '你是 SDXL 负面提示词生成器（Danbooru 标签模式）。根据正向提示词生成对应的英文负面提示词（逗号分隔标签）：列出应避免的质量问题（low quality, bad hands）、畸变、文字/水印、多余肢体、以及用户可能不想出现的元素。以 easynegative, bad-hands 开头。只输出标签，不解释、不写 markdown。';
+    return '你是 SDXL 负面提示词生成器（Danbooru 标签模式）。根据正向提示词生成对应的英文负面提示词（逗号分隔标签）：列出应避免的质量问题（low quality, bad hands）、畸变、文字/水印、多余肢体、重复或错误部位。以 easynegative, bad-hands 开头。只输出标签，不解释、不写 markdown。'+NEG_FORBID;
   }
-  return '你是 SDXL 负面提示词生成器。根据正向提示词生成对应的英文负面提示词（短关键词短语，逗号分隔）：列出应避免的质量问题与畸变（low quality, bad anatomy, blurry, watermark 等）。只输出提示词本身，不解释、不写 markdown。';
+  return '你是 SDXL 负面提示词生成器。根据正向提示词生成对应的英文负面提示词（短关键词短语，逗号分隔）：列出应避免的质量问题与畸变（low quality, bad anatomy, blurry, watermark 等）。只输出提示词本身，不解释、不写 markdown。'+NEG_FORBID;
+}
+const NEG_FILTER=/\b(censorship|censored|inappropriate content|explicit content|nsfw|safe for work|sfw|moderation|age restriction|content warning)\b/gi;
+function sanitizeNeg(t){
+  return t.replace(NEG_FILTER,'').replace(/,{2,}/g,',').replace(/,\s*$/,'').replace(/^\s*,/,'').replace(/\s{2,}/g,' ').trim();
+}
+
+/* ============ 提示词库参考（精选 / 全量检索） ============ */
+const LIB_CUR=(()=>{ const m=new Map(); const add=(zh,en)=>{ if(!m.has(zh)) m.set(zh,[]); m.get(zh).push(en); };
+  for(const[zh,en]of Object.entries(DICT)) add(zh,en);
+  for(const[zh,en]of CURATED_LIB) add(zh,en);
+  return m; })();
+let FULL_LIB=null, fullMap=null, fullLoading=false, fullPromise=null;
+function setLibStatus(t){ $('libStatus').textContent=t; }
+function buildFullMap(){
+  fullMap=new Map();
+  for(const[zh,en]of FULL_LIB){ if(!fullMap.has(zh)) fullMap.set(zh,[]); fullMap.get(zh).push(en); }
+}
+function loadFullLib(){
+  if(FULL_LIB) return Promise.resolve(true);
+  if(fullLoading) return fullPromise;
+  fullLoading=true; setLibStatus('全量库加载中…（约 7.6MB）');
+  fullPromise=new Promise(res=>{
+    const s=document.createElement('script');
+    s.src='prompt-db.js';
+    s.onload=()=>{ FULL_LIB=window.PROMPT_DB||[]; buildFullMap(); fullLoading=false; setLibStatus('全量库已加载：'+FULL_LIB.length.toLocaleString()+' 条'); res(true); };
+    s.onerror=()=>{ fullLoading=false; setLibStatus('全量库加载失败，本次用精选库'); res(false); };
+    document.head.appendChild(s);
+  });
+  return fullPromise;
+}
+function retrieveTags(input,map,cap=80){
+  const out=new Map(); // en -> zh(首个来源)
+  const cjkRuns=(input.match(/[一-鿿]+/g)||[]);
+  outer:
+  for(const run of cjkRuns){
+    for(let i=0;i<run.length&&out.size<cap;i++){
+      let matchedLen=0;
+      for(let l=run.length-i;l>=1;l--){
+        const k=run.substr(i,l);
+        if(map.has(k)){
+          const ens=map.get(k);
+          for(let t=0;t<ens.length&&out.size<cap;t++){
+            if(!out.has(ens[t])) out.set(ens[t],k);
+          }
+          matchedLen=l; break;
+        }
+      }
+      i += matchedLen>0?matchedLen-1:0;
+    }
+    if(out.size>=cap) break outer;
+  }
+  return Array.from(out.entries()).slice(0,cap).map(([en,zh])=>[zh,en]);
+}
+function buildReferenceBlock(req,lib){
+  if(lib==='off') return '';
+  let map=LIB_CUR;
+  if(lib==='full'&&fullMap) map=fullMap;
+  const hits=retrieveTags(req,map,80);
+  if(!hits.length) return '';
+  const lines=hits.map(([zh,en])=>zh+'→'+en).join(', ');
+  return '\n参考标签库（命中你的描述，用其中准确的英文词表达，而非随意自造）：\n'+lines;
+}
+
+/* ============ H3 视频提示词（英文，按工作流三种模式） ============ */
+function h3DurData(dur){
+  const d=+dur;
+  const segs=Math.max(1,Math.round(d/3))+'–'+Math.max(2,Math.round(d/1.8))+' time segments';
+  const tail=(0.05*d).toFixed(1)+'–'+(0.08*d).toFixed(1)+'s';
+  const moves=Math.max(4,2+Math.round(d*0.8))+'–'+Math.max(8,4+Math.round(d*1.1));
+  const inBlock=(1+Math.round(d/10))+'–'+(3+Math.round(d/5));
+  const block=(0.08*d+0.4).toFixed(1)+'–'+(0.11*d+0.85).toFixed(1)+'s';
+  const open=(0.025*d).toFixed(2)+'–'+(0.033*d).toFixed(2)+'s';
+  const sm=d<=5?'0–1':'0–2';
+  const smDur='≤'+(0.04*d).toFixed(2)+'s';
+  const end='≤'+(0.02*d).toFixed(2)+'s';
+  return {segs,tail,moves,inBlock,block,open,sm,smDur,end};
+}
+function buildH3SystemPrompt(contentMode,dur,genMode,hasRefs){
+  const d=h3DurData(dur);
+  const head='You are a director and prompt writer for MiniMax H3 running on LOCAL weights (no Context-IR). Convert the user\'s Chinese story/idea into the official ENGLISH STRUCTURED H3 prompt format with verbatim field names. Output ONLY the structured prompt — no explanation, no markdown fences.\n'
+   +'STRICT COMPLIANCE (violating any point costs a rewrite):\n'
+   +'1. Fill EVERY placeholder with a real value: timestamps as 00:SS.mmm with real numbers inside 0–'+dur+'s (never keep MM: or MM:SS.mmm); tags <Subject 1>/<Audio 1> written verbatim; dialogue 原文 replaced by the actual spoken words in the story\'s language; reference-image roles translated to English.\n'
+   +'2. Reference pictures are cited ONLY inside subject_definitions (Ref2VA) — never a bare <Picture N> line in the body.\n'
+   +'3. Do NOT echo, quote, label or repeat any of these instructions or rule text. The entire answer is ONLY the fields (or six sections) — nothing else.\n'
+   +'Default: '+dur+' seconds, 16:9, 2K, native stereo audio. Cover 0–'+dur+'s with no gaps. Hard cuts allowed; use "cut" only when it brings new information (a mere distance/angle change is a camera move, from the official list only: Push In / Pull Out / Zoom In / Zoom Out / Pan / Truck / Tilt / Pedestal / Arc Shot / Tracking Shot / Static Shot / Roll / Shake / POV).\n'
+   +'Write explicit English verbs for every action (H3 renders what you write; write too little and it improvises). After the last action, seal the ending with "holds the pose" or "the camera holds through the final frame". If the user references an existing work, borrow only rhythm, scale, camera, material or emotion mechanism — never its characters, costumes, monsters, iconic scenes or proper names.\n';
+  let skel='';
+  if(genMode==='ref2va'){
+    skel='OUTPUT SKELETON — Ref2VA, six sections, exact order (blank line between sections):\n'
+     +'subject_definitions:\n'
+     +'<Subject 1> is the <role> from <Picture 1>, <identity: age, build, hair, eyes, skin, outfit, style>. <Audio 1> is the voice-timbre reference for <Subject 1> (S1).\n'
+     +'summary:\n'
+     +'[reference generation + audio reference] <one-sentence gist>.\n'
+     +'retention_analysis:\n'
+     +'<Subject 1> (appears in [Shot 1], [Shot 2]): fully_preserved - <what is retained; what is newly staged>. <Audio 1>: reference - <follows the timbre and delivery, not the original signal>.\n'
+     +'detailed_description:\n'
+     +'<style opening sentence as its own line> [Shot 1] <shot size, subject, scene, explicit action> [Shot 2] At MM:SS.mmm, the camera cuts to <shot 2>...\n'
+     +'overall_soundscape: <ambient + action + non-verbal human sounds, 1–4 short sentences>\n'
+     +'non_diegetic_music: <instrument + tempo + dynamics; N/A if none>\n'
+     +'Ref2VA rules: reference images are SEMANTIC references ("a character/scene like this"), not literal frames. Cite each picture ONLY inside subject_definitions (never a standalone <Picture N> line in the body — that is a dangling tag). Use <Subject 1> throughout the body. If a voice reference is given, bind dialogue with "using the voice timbre referenced from <Audio 1>". If the character speaks on screen, dialogue must lip-sync; if off-screen, add "while his/her lips remain completely closed" right after the line.\n';
+  }else{
+    const align=genMode==='i2va'?'For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.'
+      :genMode==='fl2va'?'How the reference pictures align with the target video — Picture 1 (from Shot 1) aligns with the 0.00-second mark of the target video; Picture 2 (from Shot N) aligns with the S.SS-second mark of the target video.'
+      :genMode==='l2va'?'How the reference pictures align with the target video — <Picture 1> (from [Shot N]) aligns with the S.SS-second mark of the target video.'
+      :'';
+    skel='OUTPUT SKELETON — base mode ('+genMode.toUpperCase()+'):\n'
+     +(align?'FIRST LINE (verbatim, then a blank line):\n'+align+'\n':'')
+     +'integrated_multimodal_description: [Shot 1] <style lock + subject lock + scene + explicit action> [Shot 2] At MM:SS.mmm, the camera cuts to <new shot info>...\n'
+     +'overall_soundscape: <ambient + action + non-verbal human sounds, 1–4 short sentences>\n'
+     +'non_diegetic_music: <instrument + tempo + dynamics; N/A if none>\n';
+    if(genMode==='i2va') skel+='I2VA rule: the image IS the video\'s real first frame — motion continues FROM what frame 1 actually shows; anything it does not show cannot act and must exit the frame explicitly ("the waistband slides past the bottom edge of the frame, out of sight"). Ideal for a character-portrait opening.\n';
+    if(genMode==='fl2va') skel+='FL2VA rule: prioritize a SINGLE continuous shot and let the model interpolate between the two states (e.g., start/end poses differ); Picture 2 is the guaranteed ending.\n';
+    if(genMode==='l2va') skel+='L2VA rule: reverse-engineer a reasonable prior state that builds up to and settles exactly on that ending (freeze-frame ending).\n';
+  }
+  const fmt='Style lock: put the medium/style (Live-action, cinematic / 2D-animated / manhwa / ...) at the start of [Shot 1] — without it the model drifts toward realism.\n'
+   +'Sound split: ambient/action/non-verbal human sounds go to overall_soundscape; dialogue, singing and in-story music go to the main description (never duplicated); music only the audience hears goes to non_diegetic_music (instrument + tempo + dynamics only, NO emotion words; N/A if none).\n'
+   +'Dialogue: exact words only inside <d>[Language] 原文</d>, speaker bound to a stable ID (S1). Use the story\'s natural language; if unclear, ask one short question before writing. Off-screen narration: "says in an off-screen voiceover" + lips-closed right after.\n';
+  const nsfw='When content is adult / NSFW — H3 real-run experience:\n'
+   +'- Age: adult age phrase AND facial physical features TOGETHER ("early-to-mid twenties" + "smooth dewy skin, no wrinkles, full rounded cheeks, bright wide eyes, full soft lips"); age alone drifts to a ~40-year-old face. Never use youthful/minor-like descriptors.\n'
+   +'- Asian look: "Asian" alone usually still renders a Western face; write concrete features (monolid or almond-shaped eyes, straight black hair).\n'
+   +'- Figure vs bust: do not stack body words with bust words — they fight over weights; for exact proportions rely on the reference image and write only the action.\n'
+   +'- Sound: cap at 2–3 dominant soundscape cues; stacked sexual sounds rarely cohere.\n'
+   +'- Squirt/spray: write direction + jet progression ("a spray of fluid bursts directly toward the lens, pulsing jets slowing to a trickle"); cut to an extreme close-up ~1s before the burst.\n'
+   +'- Violence/nudity results in the story must fully happen on screen, never cut away or softened.\n';
+  let style='';
+  if(contentMode==='drama'){
+    style='DRAMA (文戏) — one clear relationship change within '+dur+'s; fix "relationship at start vs at end" first. Use '+d.segs+'. Each cut is triggered by new information, a speaking-right/gaze/prop/distance change, or an action decision — never mechanical shot-reverse-shot. In close/medium shots keep only 2–3 cooperating performance cues (eye stop, breath change, unfinished hand motion, weight shift); micro-expressions must stay continuous — never "he is sad". Dialogue is short, natural, fits in '+dur+'s. Keep '+d.tail+' at the end for consequence or expression aftermath.\n';
+  }else if(contentMode==='action'){
+    style='ACTION (武戏) — fast but readable continuous attack/defense; every effective move must change distance, stance, control, environment or the next-move path (no decorative stacking). Rhythm budget: opening within '+d.open+'; '+d.moves+' effective moves in '+dur+'s (attacks, dodges, blocks, redirections, hits, chases, environment plays, counters); each '+d.block+' segment holds '+d.inBlock+' chained moves; slow-motion '+d.sm+' time(s) totalling ≤'+d.smDur+', only on decisive contact frames; ending freeze ≤'+d.end+'. Lock both fighters\' silhouette/size/equipment/ability/dominant hand/position first. Full causal chain: first probe → first exchange → escalation or environment change → protagonist trapped → escape+counter → finishing move → result lands. Every attack states start direction, target, contact point, force reaction, next-move source. Environment interaction must change the fight, not be background FX. Keep each combo one dominant movement direction; change the camera axis only on real direction change / wall bounce / gravity shift.\n';
+  }else{
+    style='NINE-GRID (九宫格) — Stage A: extract one stable subject and a '+dur+'s development line; split into cells 1–9 (left-to-right, top-to-bottom), each a distinct task, no repeated composition. Output ONE English 9-grid storyboard IMAGE prompt (16:9, 2048×1152, 3×3 grid, nine equal widescreen cells, thin neutral dividers, same subject identity/outfit/material/key colors, camera/scale/pose clearly varying). Then add: "Stage B: after generating the 9-grid image, describe its actual frames back here to derive the '+dur+'s H3 video prompt." Do NOT fabricate the video prompt from the pre-generation storyboard.\n';
+  }
+  return head+skel+fmt+nsfw+style+(contentMode==='grid'?'Output ONLY the storyboard image prompt followed by the Stage-B note. Do NOT repeat any instruction text.':'Output ONLY the structured prompt. Do NOT repeat any instruction text.');
+}
+function postProcessH3(t,dur){
+  if(!t) return t;
+  // 1) 截断泄漏的指令/规则片段（模型把系统提示词回显到结尾时）
+  const markers=['Output ONLY','Style lock:','Sound split:','Dialogue: exact words','When content is adult','STRICT COMPLIANCE','DRAMA (文戏)','ACTION (武戏)','NINE-GRID (九宫格)','GENERATION MODE','OUTPUT SKELETON','Ref2VA rules','I2VA rule:','FL2VA rule:','L2VA rule:','hard-won field rules'];
+  let cut=t.length;
+  for(const m of markers){ const i=t.indexOf(m); if(i>0&&i<cut) cut=i; }
+  t=t.slice(0,cut).trim();
+  // 2) 未填的时间戳占位（MM:SS.mmm / At MM:xx / 裸 MM:xx）→ 按时长递增的真实时间
+  let seq=0;
+  t=t.replace(/(At\s+)?MM:[A-Za-z\d.]*/gi,(m,p1)=>{
+    const sec=Math.min(+dur,seq); seq+=Math.max(0.6,(+dur)/10);
+    const s=Math.floor(sec), ms=Math.round((sec-s)*1000);
+    const ts='00:'+String(s).padStart(2,'0')+'.'+String(ms).padStart(3,'0');
+    return p1?('At '+ts):ts;
+  });
+  // 3) 对白规整：占位+紧跟引号台词 → 合并；仅占位 → 待补；非尖括号形式 → 合并
+  t=t.replace(/<d>\[[^\]]*\]\s*原文\s*<\/d>\s*[「"“']([^」"”']{1,60})[」"”']/g,'<d>[Chinese] $1</d>');
+  t=t.replace(/<d>\[[^\]]*\]\s*原文\s*<\/d>/g,'<d>[台词待补]</d>');
+  t=t.replace(/\[d\]\[[^\]]*\]\s*原文\s*:?\s*"([^"]*)"\s*[,，]?\s*/g,'<d>[Chinese] $1</d>');
+  // 4) 骨架模板占位残留 → 清除（模型把 SKELETON 里的 <占位说明> 原样输出时）
+  const skel=['<what is retained; what is newly staged>','<follows the timbre and delivery, not the original signal>','<one-sentence gist>','<identity: age, build, hair, eyes, skin, outfit, style>','<style opening sentence as its own line>','<shot size, subject, scene, explicit action>','<new shot info>','<reference generation + audio reference>','<instrument + tempo + dynamics; N/A if none>','<ambient + action + non-verbal human sounds, 1–4 short sentences>','<style lock + subject lock + scene + explicit action>'];
+  for(const p of skel){ if(t.includes(p)) t=t.split(p).join(' '); }
+  return t;
 }
 
 /* ============ 交互 ============ */
-let mode='tag';
+let mode='tag', libMode='cur', app='sdxl', h3Mode='drama', h3Gen='t2va';
 $('modeRadios').addEventListener('click',e=>{
   const r=e.target.closest('.radio'); if(!r)return;
   mode=r.dataset.mode;
-  document.querySelectorAll('.radio').forEach(x=>x.classList.toggle('on',x===r));
+  document.querySelectorAll('#modeRadios .radio').forEach(x=>x.classList.toggle('on',x===r));
 });
 $('nsfw').addEventListener('input',()=>{
   $('nsfwVal').textContent=NSFW_LV[+$('nsfw').value].split('：')[0];
+});
+function setNsfw(v){
+  const val=Math.max(0,Math.min(3,Math.round(v)));
+  $('nsfw').value=val;
+  $('nsfwVal').textContent=NSFW_LV[val].split('：')[0];
+  const w=$('nsfwSlider').clientWidth;
+  const tw=w-16;
+  const pct=val/3;
+  $('nsfwFill').style.width=(pct*tw/w*100)+'%';
+  $('nsfwThumb').style.left=((8+pct*tw)/w*100)+'%';
+}
+function nsfwFromEvent(e){
+  const r=$('nsfwSlider').getBoundingClientRect();
+  const x=e.clientX-r.left-8;
+  return Math.max(0,Math.min(3,(x/(r.width-16))*3));
+}
+$('nsfwSlider').addEventListener('mousedown',e=>{
+  setNsfw(nsfwFromEvent(e));
+  const move=ev=>setNsfw(nsfwFromEvent(ev));
+  const up=()=>{ document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); };
+  document.addEventListener('mousemove',move);
+  document.addEventListener('mouseup',up);
+  e.preventDefault();
+});
+$('nsfwSlider').addEventListener('touchstart',e=>{
+  setNsfw(nsfwFromEvent(e.touches[0]));
+  const move=ev=>setNsfw(nsfwFromEvent(ev.touches[0]));
+  const up=()=>{ document.removeEventListener('touchmove',move); document.removeEventListener('touchend',up); };
+  document.addEventListener('touchmove',move,{passive:false});
+  document.addEventListener('touchend',up);
+  e.preventDefault();
+},{passive:false});
+function syncLibUI(){
+  document.querySelectorAll('#libRadios .radio').forEach(x=>x.classList.toggle('on',x.dataset.lib===libMode));
+}
+$('libRadios').addEventListener('click',e=>{
+  const r=e.target.closest('.radio'); if(!r)return;
+  libMode=r.dataset.lib;
+  syncLibUI();
+  if(libMode==='full'){
+    if(!FULL_LIB) loadFullLib();
+    else setLibStatus('全量库已加载：'+FULL_LIB.length.toLocaleString()+' 条');
+  }else if(libMode==='cur'){
+    setLibStatus('精选库：内嵌 347 条常用标签；全量库 16.7万条仅在浏览器内存检索，不占模型上下文');
+  }else{
+    setLibStatus('');
+  }
+  saveCfg();
+});
+$('h3ModeRadios').addEventListener('click',e=>{
+  const r=e.target.closest('.radio'); if(!r)return;
+  h3Mode=r.dataset.h3;
+  document.querySelectorAll('#h3ModeRadios .radio').forEach(x=>x.classList.toggle('on',x===r));
+});
+const H3_REFS_UI={
+  t2va:['文字模式（T2VA）无需参考图片','',true],
+  i2va:['首帧图片文字描述（用文字描述第一帧画面，无需上传）','主角：成年女人、黑长发、睡衣，画面拍到上半身 / 场景：卧室窗边晨光',false],
+  fl2va:['首帧+尾帧文字描述（用文字描述两张图，按首→尾，无需上传）','首帧：起势动作与场景 / 尾帧：结束姿势',false],
+  l2va:['尾帧图片文字描述（用文字描述最后一帧画面，无需上传）','尾帧：定格画面与场景',false],
+  ref2va:['参考素材文字描述（角色/场景/画风/音色，每行一个，无需上传）','主角身份与服装参考 / 音色参考 / 场景参考',false]
+};
+function updateH3RefsUI(){
+  const [lab,ph,dis]=H3_REFS_UI[h3Gen];
+  $('h3RefsLab').textContent=lab;
+  $('h3Refs').placeholder=ph;
+  $('h3Refs').disabled=dis;
+}
+$('h3GenRadios').addEventListener('click',e=>{
+  const r=e.target.closest('.radio'); if(!r)return;
+  h3Gen=r.dataset.gen;
+  document.querySelectorAll('#h3GenRadios .radio').forEach(x=>x.classList.toggle('on',x===r));
+  updateH3RefsUI();
+});
+$('appTabs').addEventListener('click',e=>{
+  const t=e.target.closest('.tab'); if(!t)return;
+  app=t.dataset.app;
+  document.querySelectorAll('#appTabs .tab').forEach(x=>x.classList.toggle('on',x===t));
+  $('sdxlPanel').style.display=app==='sdxl'?'':'none';
+  $('h3Panel').style.display=app==='h3'?'':'none';
+  $('sdxlOut').style.display=app==='sdxl'?'':'none';
+  $('h3Out').style.display=app==='h3'?'':'none';
+  $('exBtn').style.display=app==='sdxl'?'':'none';
+  if(app==='sdxl'){
+    $('reqLab').textContent='中文需求（自由描述你要的画面，NSFW 也直接写）';
+    $('req').placeholder='例：一个年轻女人躺在床上，裸体，张开双腿，露出湿润的小穴，看着镜头，眼神勾人，室内暖光，电影感';
+  }else{
+    $('reqLab').textContent='中文需求（描述你要的视频故事/画面）';
+    $('req').placeholder='例：一个成年女人在卧室窗边解开衬衫扣子，看向镜头，暧昧微笑，暖光，电影感';
+  }
 });
 
 async function pingLocal(){
@@ -268,7 +654,7 @@ async function pingLocal(){
 setInterval(pingLocal,6000);
 
 $('goBtn').addEventListener('click',async()=>{
-  const req=$('req').value.trim(); const out=$('out'); const err=$('err');
+  const req=$('req').value.trim(); const err=$('err');
   if(!req){ err.textContent='请先输入中文需求'; err.style.display='block'; return; }
   saveCfg();
   const base=$('baseUrl').value.trim().replace(/\/+$/,'');
@@ -276,57 +662,86 @@ $('goBtn').addEventListener('click',async()=>{
   const key=$('apiKey').value.trim();
   if(!base||!model){ err.textContent='Base URL 和模型名不能为空'; err.style.display='block'; return; }
   if($('provider').value!=='local'&&!key){ err.textContent='在线源需要 API Key'; err.style.display='block'; return; }
-  err.style.display='none'; out.value='转换中…';
+  err.style.display='none';
+  if(app==='h3'){ await doH3(base,model,key,req); return; }
+  await doSdxl(base,model,key,req);
+});
+
+async function doSdxl(base,model,key,req){
+  const out=$('out'); const err=$('err'); out.value='转换中…';
+  let lib=libMode;
+  let refBlock='';
+  if(lib==='full'&&!FULL_LIB){
+    const ok=await loadFullLib();
+    if(!ok) lib='cur';
+  }
+  if(lib!=='off') refBlock=buildReferenceBlock(req,lib);
   const headers={'Content-Type':'application/json'};
   if(key) headers['Authorization']='Bearer '+key;
   try{
     const res=await fetch(base+'/chat/completions',{method:'POST',headers,signal:AbortSignal.timeout(180000),
       body:JSON.stringify({model,messages:[
-        {role:'system',content:buildSystemPrompt(mode,+$('nsfw').value)},
+        {role:'system',content:buildSystemPrompt(mode,+$('nsfw').value,refBlock)},
         {role:'user',content:req}
-      ],temperature:0.2,max_tokens:2048,chat_template_kwargs:{enable_thinking:false}})});
+      ],temperature:0.2,max_tokens:3072,chat_template_kwargs:{enable_thinking:false}})});
     if(!res.ok){ const t=await res.text(); throw new Error('HTTP '+res.status+' '+(t.slice(0,200))); }
     const d=await res.json();
     out.value=(d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content||'').trim();
     if(!out.value) throw new Error('空响应');
-    // 负面提示词：本地模型用通用默认（负担重），在线模型实时生成
     const neg=$('neg');
-    if($('provider').value==='local'){
-      neg.value=mode==='tag'?DEFAULT_NEG_TAG:DEFAULT_NEG_NL;
-    }else{
-      neg.value='生成中…';
-      try{
+    neg.value='生成中…';
+    try{
         const r2=await fetch(base+'/chat/completions',{method:'POST',headers,signal:AbortSignal.timeout(180000),
           body:JSON.stringify({model,messages:[
             {role:'system',content:buildNegSystemPrompt(mode)},
             {role:'user',content:'正向提示词：'+out.value}
-          ],temperature:0.2,max_tokens:2048,chat_template_kwargs:{enable_thinking:false}})});
+          ],temperature:0.2,max_tokens:3072,chat_template_kwargs:{enable_thinking:false}})});
         if(r2.ok){
           const d2=await r2.json();
           const nv=(d2.choices&&d2.choices[0]&&d2.choices[0].message&&d2.choices[0].message.content||'').trim();
-          neg.value=nv||(mode==='tag'?DEFAULT_NEG_TAG:DEFAULT_NEG_NL);
+          neg.value=sanitizeNeg(nv)||(mode==='tag'?DEFAULT_NEG_TAG:DEFAULT_NEG_NL);
         }else{ neg.value=mode==='tag'?DEFAULT_NEG_TAG:DEFAULT_NEG_NL; }
       }catch(e2){ neg.value=mode==='tag'?DEFAULT_NEG_TAG:DEFAULT_NEG_NL; }
-    }
   }catch(e){
     err.textContent='转换失败：'+e.message+'（本地源需先启动 llama-server；在线源检查 Key/网络）';
     err.style.display='block'; out.value=''; $('neg').value='';
   }
-});
+}
 
-$('copyBtn').addEventListener('click',async()=>{
-  const out=$('out').value; if(!out)return;
-  try{ await navigator.clipboard.writeText(out); $('copyBtn').textContent='✓ 已复制'; }
-  catch(e){ out.select(); document.execCommand('copy'); $('copyBtn').textContent='✓ 已复制'; }
-  setTimeout(()=>$('copyBtn').textContent='📋 复制',1500);
-});
+async function doH3(base,model,key,req){
+  const out=$('out3'); const err=$('err'); out.value='转换中…';
+  const headers={'Content-Type':'application/json'};
+  if(key) headers['Authorization']='Bearer '+key;
+  try{
+    const refsTxt=$('h3Refs').value.trim();
+    const hasRefs = h3Gen!=='t2va' && !!refsTxt;
+    const userMsg=hasRefs?('Reference materials (one per line, in submission order):\n'+refsTxt+'\n\nStory / requirement:\n'+req):req;
+    const res=await fetch(base+'/chat/completions',{method:'POST',headers,signal:AbortSignal.timeout(180000),
+      body:JSON.stringify({model,messages:[
+        {role:'system',content:buildH3SystemPrompt(h3Mode,$('h3Dur').value,h3Gen,hasRefs)},
+        {role:'user',content:userMsg}
+      ],temperature:0.3,max_tokens:4096,chat_template_kwargs:{enable_thinking:false}})});
+    if(!res.ok){ const t=await res.text(); throw new Error('HTTP '+res.status+' '+(t.slice(0,200))); }
+    const d=await res.json();
+    out.value=postProcessH3((d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content||'').trim(),$('h3Dur').value);
+    if(!out.value) throw new Error('空响应');
+  }catch(e){
+    err.textContent='H3 转换失败：'+e.message+'（本地源需先启动 llama-server；在线源检查 Key/网络）';
+    err.style.display='block'; out.value='';
+  }
+}
 
-$('copyNegBtn').addEventListener('click',async()=>{
-  const neg=$('neg').value; if(!neg)return;
-  try{ await navigator.clipboard.writeText(neg); $('copyNegBtn').textContent='✓ 已复制'; }
-  catch(e){ $('neg').select(); document.execCommand('copy'); $('copyNegBtn').textContent='✓ 已复制'; }
-  setTimeout(()=>$('copyNegBtn').textContent='📋 复制负面',1500);
-});
+function bindCopy(btn,ta,label){
+  $(btn).addEventListener('click',async()=>{
+    const v=$(ta).value; if(!v)return;
+    try{ await navigator.clipboard.writeText(v); $(btn).textContent='✓ 已复制'; }
+    catch(e){ $(ta).select(); document.execCommand('copy'); $(btn).textContent='✓ 已复制'; }
+    setTimeout(()=>$(btn).textContent=label,1500);
+  });
+}
+bindCopy('copyBtn','out','📋 复制');
+bindCopy('copyNegBtn','neg','📋 复制负面');
+bindCopy('copy3Btn','out3','📋 复制');
 
 $('exBtn').addEventListener('click',()=>{
   $('req').value='一个年轻女人躺在床上，裸体，张开双腿，露出湿润的小穴，看着镜头，眼神勾人，室内暖光，电影感';
@@ -338,7 +753,7 @@ $('themeBtn').addEventListener('click',()=>{
   $('themeBtn').textContent=t==='dark'?'🌓 切换浅色':'🌙 切换深色';
 });
 
-applyCfg(); pingLocal();
+applyCfg(); pingLocal(); updateH3RefsUI(); setNsfw(+$('nsfw').value||2);
 </script>
 </body>
 </html>

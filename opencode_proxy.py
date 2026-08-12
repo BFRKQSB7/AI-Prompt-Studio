@@ -1,21 +1,31 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""本地 CORS 代理 — 让 file:// 页面（提示词转换器）能访问 opencode API
+"""本地 CORS 代理 — 让 file:// 页面（AI 提示词工坊）能访问 opencode API
 转发到 https://opencode.ai/zen/go/v1，自动加 CORS 头 + 处理 OPTIONS 预检。
-
-Key 获取顺序：环境变量 OPENCODE_API_KEY → opencode 默认认证文件
-（~/.local/share/opencode/auth.json）。可配环境变量 OPENCODE_MODEL / OPENCODE_BASE_URL。
 
 用法: python opencode_proxy.py [端口=7898]
 """
 import json, os, subprocess, sys, http.server
 
-UPSTREAM = os.environ.get("OPENCODE_BASE_URL", "https://opencode.ai/zen/go/v1")
-MODEL = os.environ.get("OPENCODE_MODEL", "deepseek-v4-flash")
+# ================= 在这里填你的配置 =================
+# 1) API Key：把下面的空引号换成你的 key，例如 API_KEY = "sk-l75..."
+#    留空 "" 则自动读取：环境变量 OPENCODE_API_KEY → opencode 认证文件 auth.json
+API_KEY = ""
+
+# 2) 可选：模型名 / 网关地址（一般不用改）
+MODEL = "deepseek-v4-flash"
+UPSTREAM = "https://opencode.ai/zen/go/v1"
+# ===================================================
+
 AUTH = os.path.expanduser("~/.local/share/opencode/auth.json")
+MODEL = os.environ.get("OPENCODE_MODEL", MODEL)
+UPSTREAM = os.environ.get("OPENCODE_BASE_URL", UPSTREAM)
 
 
 def _api_key():
+    k = (API_KEY or "").strip()
+    if k:
+        return k
     k = os.environ.get("OPENCODE_API_KEY", "").strip()
     if k:
         return k
@@ -93,5 +103,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 7898
+    if not API_KEY:
+        print("⚠️ 未检测到 API Key —— 请在 opencode_proxy.py 顶部 API_KEY = \"\" 填入你的 key（或设置环境变量 OPENCODE_API_KEY）")
     print(f"opencode CORS proxy on http://127.0.0.1:{port}/v1  (model={MODEL}, key={API_KEY[:8]}...)")
     http.server.ThreadingHTTPServer(("127.0.0.1", port), Handler).serve_forever()
