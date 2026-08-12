@@ -1,601 +1,344 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>写实提示词生成器 v1.3.0</title>
+<title>提示词转换器 — 中文需求 → SDXL 直白提示词</title>
 <style>
-  :root, html[data-theme="dark"]{
-    --bg:#0e131f; --card:#151d2e; --card2:#0a0f1a; --border:#26324a;
-    --text:#e2e8f0; --text2:#8b9bb4; --text3:#64748b;
-    --accent:#4f8ef7; --accent-soft:rgba(79,142,247,.14);
-    --pos:#2dd4bf; --pos-soft:rgba(45,212,191,.14); --neg:#f87171; --neg-soft:rgba(248,113,113,.14);
-    --fav:#f5b942; --fav-soft:rgba(245,185,66,.16);
-    --radius:10px; --radius-sm:6px;
-    --shadow:0 1px 2px rgba(0,0,0,.4);
-  }
-  html[data-theme="light"]{
-    --bg:#f7f5f2; --card:#ffffff; --card2:#efece7; --border:#e5e1da;
-    --text:#1e293b; --text2:#475569; --text3:#64748b;
-    --accent:#4f8ef7; --accent-soft:rgba(79,142,247,.14);
-    --pos:#2dd4bf; --pos-soft:rgba(45,212,191,.14); --neg:#f87171; --neg-soft:rgba(248,113,113,.14);
-    --fav:#f5b942; --fav-soft:rgba(245,185,66,.16);
-    --radius:10px; --radius-sm:6px;
-    --shadow:0 1px 2px rgba(15,23,42,.08);
-  }
-  @media (prefers-color-scheme: dark){ :root{ color-scheme:dark; } }
-
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 -apple-system,"Segoe UI","Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif;-webkit-font-smoothing:antialiased}
-  button{font-family:inherit;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:var(--radius-sm);padding:.35rem .7rem;font-size:13px}
-  button:hover{border-color:var(--accent);color:var(--accent)}
-  code{font-family:Consolas,"JetBrains Mono",monospace;font-size:.9em}
-
-  .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;padding:.6rem 1rem;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
-  .topbar h1{font-size:1.05rem;margin:0;white-space:nowrap}
-  .topbar .sub{color:var(--text3);font-size:12px;margin-right:.4rem}
-  .spacer{flex:1}
-  .btn-pos{background:var(--pos-soft);color:var(--pos);border-color:var(--pos)}
-  .btn-neg{background:var(--neg-soft);color:var(--neg);border-color:var(--neg)}
-  .btn-fav-on{background:var(--fav-soft);color:var(--fav);border-color:var(--fav)}
-  .toolbar select{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.35rem .4rem;font-size:13px}
-
-  .layout{display:flex;gap:1rem;max-width:1200px;margin:0 auto;padding:1rem}
-  aside{width:170px;flex:none;display:flex;flex-direction:column;gap:.35rem}
-  aside button{text-align:left;padding:.5rem .7rem;font-size:13px}
-  aside button.active{background:var(--accent);border-color:var(--accent);color:#fff}
-  aside button.neg-slot{color:var(--neg)}
-  aside button.neg-slot.active{background:var(--neg);border-color:var(--neg);color:#fff}
-  main{flex:1;min-width:0;display:flex;flex-direction:column;gap:1rem}
-
-  .preview{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:.8rem 1rem}
-  .preview .label{font-size:12px;color:var(--text3);margin-bottom:.4rem}
-  .preview .pos-box{min-height:56px;padding:.6rem .8rem;background:var(--card2);border:1px solid var(--border);border-radius:var(--radius-sm);display:flex;flex-wrap:wrap;gap:.35rem;align-items:center}
-  .preview .neg-box{min-height:44px;margin-top:.6rem;padding:.5rem .8rem;background:var(--neg-soft);border:1px solid var(--neg);border-radius:var(--radius-sm);display:flex;flex-wrap:wrap;gap:.3rem;align-items:center}
-  .preview .empty{color:var(--text3);font-size:13px}
-  .chip{display:inline-flex;align-items:center;gap:.35rem;padding:.15rem .4rem .15rem .55rem;border-radius:6px;font-size:13px;cursor:grab;user-select:none}
-  .chip.pos{background:var(--pos-soft);color:var(--pos);border:1px solid var(--pos)}
-  .chip.neg{background:var(--neg-soft);color:var(--neg);border:1px solid var(--neg)}
-  .chip .en{color:var(--text)}
-  .chip .w{font-size:11px;background:var(--fav);color:#111;border-radius:4px;padding:0 .3rem;cursor:pointer}
-  .chip .x{opacity:.5;cursor:pointer;font-weight:700}
-  .chip .x:hover{opacity:1}
-  .chip.dragging{opacity:.5}
-  .neg-extra{margin-top:.5rem;display:flex;align-items:center;gap:.5rem}
-  .neg-extra input{flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm);padding:.4rem .6rem;font-size:13px;font-family:inherit}
-  .search-row{position:relative;margin-top:.6rem}
-  .search-row input{width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm);padding:.5rem .7rem;font-size:13px}
-  .search-results{position:absolute;top:100%;left:0;right:0;background:var(--card);border:1px solid var(--accent);border-radius:var(--radius-sm);max-height:260px;overflow-y:auto;display:none;z-index:80;box-shadow:var(--shadow)}
-  .search-results.show{display:block}
-  .sr{padding:.45rem .7rem;font-size:13px;cursor:pointer;display:flex;justify-content:space-between;gap:.6rem;border-bottom:1px solid var(--border)}
-  .sr:hover{background:var(--accent-soft)}
-  .sr .sr-en{color:var(--accent);font-weight:600}
-  .sr .sr-zh{color:var(--text3);font-size:12px}
-
-  .slot-head{display:flex;align-items:baseline;gap:.6rem;flex-wrap:wrap}
-  .slot-head h2{font-size:1rem;margin:0;color:var(--accent)}
-  .slot-head .hint{font-size:12px;color:var(--text3)}
-  .subbar{display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.4rem}
-  .subbar button{padding:.25rem .7rem;font-size:12px}
-  .subbar button.active{background:var(--accent);border-color:var(--accent);color:#fff}
-  .phrases{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:.5rem}
-  .phrase{position:relative;text-align:left;padding:.55rem .7rem;font-size:13px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);display:flex;flex-direction:column;gap:.1rem;align-items:flex-start}
-  .phrase:hover{border-color:var(--accent)}
-  .phrase .en{color:var(--accent);font-weight:600}
-  .phrase .zh{color:var(--text3);font-size:12px}
-  .phrase.sel{background:var(--pos-soft);border-color:var(--pos)}
-  .phrase.sel .en{color:var(--pos)}
-  .phrase.neg-sel{background:var(--neg-soft);border-color:var(--neg)}
-  .phrase.neg-sel .en{color:var(--neg)}
-  .phrase .fav-star{position:absolute;top:.3rem;right:.4rem;font-size:13px;color:var(--text3);cursor:pointer}
-  .phrase.faved .fav-star{color:var(--fav)}
-  .phrase .wgt{font-size:11px;color:var(--text3)}
-
-  .weight-pop{position:fixed;z-index:200;background:var(--card);border:1px solid var(--accent);border-radius:var(--radius);padding:.7rem;box-shadow:0 8px 24px rgba(0,0,0,.35);display:none;min-width:190px}
-  .weight-pop.show{display:block}
-  .weight-pop .row{display:flex;align-items:center;gap:.35rem;margin:.3rem 0}
-  .weight-pop input{width:70px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm);padding:.25rem .4rem;text-align:center}
-  .weight-pop .tiny{padding:.2rem .4rem;font-size:12px}
-
-  #copyModal{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;padding:1rem}
-  #copyModal.show{display:flex}
-  #copyModal .cm-box{background:var(--card);border:1px solid var(--accent);border-radius:var(--radius);padding:.8rem;width:min(640px,92vw);box-shadow:0 10px 30px rgba(0,0,0,.4)}
-  #copyModal .cm-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--accent);margin-bottom:.5rem}
-  #copyModal .cm-close{background:none;border:none;color:var(--text2);font-size:14px;padding:.2rem .4rem}
-  #copyModal .cm-text{width:100%;min-height:110px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm);padding:.6rem .7rem;font-size:13px;resize:vertical;font-family:inherit}
-
-  footer{padding:1rem;text-align:center;color:var(--text3);font-size:12px}
-  @media (max-width:760px){ .layout{flex-direction:column} aside{width:100%;flex-direction:row;flex-wrap:wrap} aside button{flex:1;text-align:center} }
+:root{--bg:#0f1115;--panel:#171a21;--panel2:#1d2129;--border:#2a2f3a;--text:#e6e8ee;--dim:#9aa2b1;--acc:#4f8cff;--ok:#3ecf8e;--bad:#ff6b6b}
+[data-theme="light"]{--bg:#f5f6f8;--panel:#ffffff;--panel2:#f0f1f4;--border:#dfe2e8;--text:#1c1f26;--dim:#6a7280;--acc:#2f6fe4;--ok:#1aa873;--bad:#d64545}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;line-height:1.6;min-height:100vh}
+.wrap{max-width:920px;margin:0 auto;padding:24px 20px 60px}
+header{display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap}
+h1{font-size:20px;font-weight:700}
+.spacer{flex:1}
+.status{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:3px 10px;border-radius:99px;background:var(--panel2);color:var(--dim);border:1px solid var(--border)}
+.status .dot{width:8px;height:8px;border-radius:50%;background:#555}
+.status.ok .dot{background:var(--ok)} .status.bad .dot{background:var(--bad)}
+.theme-btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:13px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px}
+label{display:block;font-size:13px;color:var(--dim);margin-bottom:8px}
+textarea{width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:12px;font-size:14px;resize:vertical;font-family:inherit}
+textarea#req{min-height:90px}
+textarea#out{min-height:130px;font-family:Consolas,Menlo,monospace;font-size:13px}
+.grid{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:end}
+.grid label{display:block;font-size:12px;color:var(--dim);margin-bottom:4px}
+input,select{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px}
+.row{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px}
+.seg{flex:1;min-width:220px}
+.radios{display:flex;gap:8px;flex-wrap:wrap}
+.radio{flex:1;min-width:130px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;text-align:center;font-size:13px;background:var(--panel2);user-select:none}
+.radio.on{border-color:var(--acc);background:rgba(79,140,255,.12);color:var(--acc);font-weight:600}
+.radio small{display:block;color:var(--dim);font-weight:400;margin-top:2px}
+input[type=range]{width:100%;accent-color:var(--acc)}
+.slider-val{font-size:13px;color:var(--acc);font-weight:600}
+.btns{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.btn{flex:1;min-width:140px;padding:11px;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;color:#fff;transition:opacity .15s}
+.btn:hover{opacity:.88}
+.btn.primary{background:var(--acc)}
+.btn.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--border);font-weight:400}
+.err{color:var(--bad);font-size:13px;margin-top:10px;display:none}
+.hint{font-size:12px;color:var(--dim);margin-top:10px}
+.hint code{background:var(--panel2);padding:1px 5px;border-radius:4px}
+footer{margin-top:26px;font-size:12px;color:var(--dim);text-align:center}
 </style>
 </head>
 <body>
+<div class="wrap">
+  <header>
+    <h1>提示词转换器</h1>
+    <span id="status" class="status"><span class="dot"></span>检测本地后端…</span>
+    <span class="spacer"></span>
+    <button class="theme-btn" id="themeBtn">🌓 切换浅色</button>
+  </header>
 
-<div class="topbar">
-  <h1>🎨 写实提示词生成器 v1.3.0</h1>
-  <span class="sub">自然语言 · 适配 RealVis / Juggernaut 写实模型</span>
-  <div class="spacer"></div>
-  <select id="presetSel"><option value="">预设</option></select>
-  <button id="savePresetBtn" title="保存当前组合为预设">💾 存预设</button>
-  <button id="delPresetBtn" title="删除当前选中的预设">🗑 删预设</button>
-  <button id="randBtn" title="每个槽位随机抽一条">🎲 灵感随机</button>
-  <button id="favOnlyBtn" title="只看已收藏短语">★ 仅看收藏</button>
-  <button id="themeBtn" title="切换深浅色">🌓</button>
-  <button id="clearBtn">清空</button>
-  <button class="btn-pos" id="copyPosBtn">📋 复制正面</button>
-  <button class="btn-neg" id="copyNegBtn">📋 复制负面</button>
-</div>
+  <div class="card">
+    <div class="grid">
+      <div><label>模型源</label><select id="provider">
+        <option value="local">本地 llama</option>
+        <option value="openai">OpenAI</option>
+        <option value="deepseek">DeepSeek</option>
+        <option value="custom">自定义（OpenAI 兼容）</option>
+      </select></div>
+      <div><label>Base URL</label><input id="baseUrl" value="http://127.0.0.1:4001/v1"></div>
+      <div><label>模型名</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="modelName" style="flex:1"><option value="">（点击载入模型列表）</option></select>
+          <button type="button" id="loadModels" style="flex:0 0 auto;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer">📂 载入模型列表</button>
+        </div>
+      </div>
+      <div><label>API Key（在线源必填）</label><input id="apiKey" type="password" placeholder="sk-..."></div>
+    </div>
 
-<div class="layout">
-  <aside id="slotNav">
-    <button data-i="0" class="active">① 质量词</button>
-    <button data-i="1">② 主体</button>
-    <button data-i="2">③ 外貌细节</button>
-    <button data-i="3">④ 动作 / 姿势</button>
-    <button data-i="4">⑤ 服饰</button>
-    <button data-i="5">⑥ 场景 / 环境</button>
-    <button data-i="6">⑦ 光线</button>
-    <button data-i="7">⑧ 镜头 / 风格</button>
-    <button data-i="8" class="neg-slot">⑨ 负面词</button>
-  </aside>
+    <label for="req" style="margin-top:16px">中文需求（自由描述你要的画面，NSFW 也直接写）</label>
+    <textarea id="req" placeholder="例：一个年轻女人躺在床上，裸体，张开双腿，露出湿润的小穴，看着镜头，眼神勾人，室内暖光，电影感"></textarea>
 
-  <main>
-    <div class="preview">
-      <div class="label">正面提示词（点胶囊 × 删除，可拖动排序）</div>
-      <div class="pos-box" id="posBox"><span class="empty">在右侧选短语，会自动拼成一句自然语言提示词…</span></div>
-      <div class="label" style="margin-top:.6rem">负面提示词（⑨ 槽位点选，或下方自由补充）</div>
-      <div class="neg-box" id="negBox"><span class="empty">在「⑨ 负面词」槽位点选，可拖动排序</span></div>
-      <div class="neg-extra">
-        <span class="label">额外负面</span>
-        <input id="negExtra" placeholder="自由补充想排除的词，如：ugly, extra limbs…">
+    <div class="row">
+      <div class="seg">
+        <label>目标模型方言</label>
+        <div class="radios" id="modeRadios">
+          <div class="radio" data-mode="nl"><span>自然语言流</span><small>RealVis / Juggernaut</small></div>
+          <div class="radio on" data-mode="tag"><span>标签流</span><small>NoobAI / Pony / Manhwa</small></div>
+        </div>
+      </div>
+      <div class="seg">
+        <label>NSFW 直白度：<span class="slider-val" id="nsfwVal">直白</span></label>
+        <input type="range" id="nsfw" min="0" max="3" value="2" step="1">
       </div>
     </div>
 
-    <div class="slot-head">
-      <h2 id="slotTitle">质量词</h2>
-      <span class="hint" id="slotHint">可多选</span>
+    <div class="btns">
+      <button class="btn primary" id="goBtn">转换 →</button>
+      <button class="btn ghost" id="exBtn">填入示例</button>
     </div>
-    <div class="subbar" id="subbar"></div>
-    <div class="phrases" id="phraseGrid"></div>
-  </main>
-</div>
+    <div class="err" id="err"></div>
+  </div>
 
-<div class="weight-pop" id="weightPop">
-  <div class="row"><b>权重</b> <input id="wInput" value="1.2"> <button class="tiny" id="wDec">−</button> <button class="tiny" id="wInc">+</button></div>
-  <div class="row"><button id="wReset">重置为 1</button> <button id="wClose" style="margin-left:auto">完成</button></div>
-</div>
+  <div class="card">
+    <label for="out">生成的提示词（复制使用）</label>
+    <textarea id="out" readonly placeholder="转换结果会显示在这里…"></textarea>
+    <div class="btns">
+      <button class="btn ghost" id="copyBtn">📋 复制</button>
+    </div>
+    <label for="neg" style="margin-top:16px">负面提示词（Negative Prompt，复制使用）</label>
+    <textarea id="neg" readonly placeholder="负面提示词：本地模型自动填通用默认；在线模型实时生成…"></textarea>
+    <div class="btns">
+      <button class="btn ghost" id="copyNegBtn">📋 复制负面</button>
+    </div>
+    <div class="hint">
+      本地 llama：需先在本机启动一个 OpenAI 兼容的 llama-server（地址在上方 Base URL 中配置）。OpenAI/DeepSeek：填 API Key 即可直连（本地存储）。
+    </div>
+  </div>
 
-<footer>写实提示词生成器 v1.3.0 · 单文件离线可用 · 槽位式自然语言拼装 · 二级分类 · 含成人(NSFW)内容，请遵守当地法律</footer>
+  <footer>直白词典内置为知识库 · 支持本地/OpenAI/DeepSeek · 转换走本地 llama 或在线 API</footer>
+</div>
 
 <script>
-(function(){
-"use strict";
-/* ============ 数据：9 槽位短语库（含二级分类）============ */
-const SLOTS = [
-{ name:'质量词', multi:true, subs:['基础','清晰度','质感','色彩'], phrases:[
-  ['photorealistic','照片级真实','基础'],['highly detailed','高度细节','基础'],['high quality','高质量','基础'],['masterpiece','杰作','基础'],
-  ['professional photography','专业摄影','基础'],['award winning','获奖级','基础'],['best quality','最佳质量','基础'],['lifelike','栩栩如生','基础'],
-  ['studio quality','影棚级质量','基础'],['well composed','构图讲究','基础'],['well lit','光线良好','基础'],['true to life','贴近真实','基础'],
-  ['sharp focus','锐利对焦','清晰度'],['tack sharp','极度清晰','清晰度'],['ultra high resolution','超高分辨率','清晰度'],['8k uhd','8K 超高清','清晰度'],
-  ['crisp details','清晰细节','清晰度'],['hyper detailed','超精细','清晰度'],['high dynamic range','高动态范围','清晰度'],['subtle gradients','细腻过渡','清晰度'],
-  ['natural skin texture','自然皮肤质感','质感'],['fine skin pores','细腻毛孔','质感'],['soft skin','柔和肌肤','质感'],['film grain','胶片颗粒','质感'],
-  ['superb texture','质感出众','质感'],['realistic proportions','真实比例','质感'],['clear subject','主体清晰','质感'],['balanced exposure','曝光均衡','质感'],
-  ['vivid colors','色彩鲜活','色彩'],['true to life colors','真实色彩','色彩'],['rich color depth','色彩层次丰富','色彩'],['natural color grading','自然调色','色彩'],
-  ['amazing quality','惊人质量','基础'],['with a detailed face','精细面部细节','清晰度'],['with a detailed background','精细背景细节','清晰度'],
-]},
-{ name:'主体', multi:false, subs:['女性','男性','多人','职业/身份','人数'], phrases:[
-  ['a beautiful woman','一位美丽的女人','女性'],['a young woman','一位年轻女性','女性'],['a mature woman','一位成熟女性','女性'],['a slender woman','一位苗条女性','女性'],
-  ['a curvy woman','一位丰满曲线的女性','女性'],['a petite woman','一位娇小女性','女性'],['a woman in her forties','一位四十多岁的女性','女性'],['a fit woman','一位健美的女性','女性'],
-  ['a model','一位模特','女性'],['a dancer','一位舞者','女性'],['a female athlete','一位女运动员','女性'],['a redhead woman','一位红发女性','女性'],
-  ['a handsome man','一位英俊的男人','男性'],['a middle-aged man','一位中年男性','男性'],['a fit muscular man','一位健壮肌肉男','男性'],['a tall athletic man','一位高大运动型男性','男性'],
-  ['a man in his thirties','一位三十多岁的男性','男性'],['an elderly man','一位老年男性','男性'],['a rugged man','一位粗犷的男人','男性'],['a clean-shaven man','一位白净的男人','男性'],
-  ['a young couple','一对年轻情侣','多人'],['a pair of twins','一对双胞胎','多人'],['a mother and daughter','一对母女','多人'],['a group of friends','一群朋友','多人'],
-  ['two women','两位女性','多人'],['a father and son','一对父子','多人'],['a trio of musicians','三人乐队','多人'],['a family portrait','一家人','多人'],
-  ['a businessman','一位商务男士','职业/身份'],['a nurse','一位护士','职业/身份'],['a waitress','一位女服务员','职业/身份'],['a chef','一位厨师','职业/身份'],
-  ['a doctor','一位医生','职业/身份'],['a soldier','一位军人','职业/身份'],['a police officer','一位警察','职业/身份'],['a firefighter','一位消防员','职业/身份'],
-  ['a flight attendant','一位空乘','职业/身份'],['a gym trainer','一位健身教练','职业/身份'],['a barista','一位咖啡师','职业/身份'],['a pilot','一位飞行员','职业/身份'],
-  ['a single girl','单人少女','人数'],['a single boy','单人少年','人数'],['two girls','两名女性','人数'],['two boys','两名男性','人数'],
-  ['three girls','三名女性','人数'],['a lone figure','孤身人物','人数'],['a group of people','一组人群','人数'],['a crowd of people','密集人群','人数'],
-]},
-{ name:'外貌细节', multi:false, subs:['头发','眼睛','皮肤','身材'], phrases:[
-  ['with long flowing hair','飘逸长发','头发'],['with short hair','短发','头发'],['with wavy brown hair','棕色波浪长发','头发'],['with blonde hair','金发','头发'],
-  ['with black hair','黑发','头发'],['with red hair','红发','头发'],['with a ponytail','马尾辫','头发'],['with braided hair','辫发','头发'],
-  ['with curly hair','卷发','头发'],['with a side part','侧分发型','头发'],['with hair pulled back','向后梳发','头发'],['with soft bangs','柔和刘海','头发'],
-  ['with green eyes','绿眼睛','眼睛'],['with blue eyes','蓝眼睛','眼睛'],['with brown eyes','棕色眼睛','眼睛'],['with hazel eyes','浅褐色眼睛','眼睛'],
-  ['with piercing eyes','锐利眼神','眼睛'],['with warm brown eyes','温暖棕眼','眼睛'],['with dark eyes','深邃眼眸','眼睛'],['with striking green eyes','迷人绿眸','眼睛'],
-  ['with freckles','雀斑','皮肤'],['with a fair complexion','白皙皮肤','皮肤'],['with tanned skin','小麦色皮肤','皮肤'],['with glowing skin','光泽肌肤','皮肤'],
-  ['with smooth skin','光滑肌肤','皮肤'],['with sun-kissed skin','日晒肌','皮肤'],['with a natural makeup look','自然妆容','皮肤'],['with soft features','柔和五官','皮肤'],
-  ['with a slim figure','苗条身材','身材'],['with an athletic build','运动身材','身材'],['with a curvaceous figure','曲线身材','身材'],['with a muscular physique','肌肉体格','身材'],
-  ['with a toned body','紧实身材','身材'],['with long legs','修长双腿','身材'],['with an elegant posture','优雅仪态','身材'],['with graceful hands','纤美双手','身材'],
-  ['with white hair','白发','头发'],['with pink hair','粉发','头发'],['with purple hair','紫发','头发'],['with silver hair','银发','头发'],
-  ['with orange hair','橙发','头发'],['with grey hair','灰发','头发'],['with multicolored hair','多色发','头发'],['with medium-length hair','中长发','头发'],
-  ['with twintails','双马尾','头发'],['with twin braids','双辫','头发'],['with an ahoge','呆毛','头发'],['with wavy hair','波浪发','头发'],
-  ['with straight hair','直发','头发'],['with a bun','发髻','头发'],['with a side ponytail','侧马尾','头发'],['with low twintails','低双马尾','头发'],
-  ['with a bob cut','波波头','头发'],['with sidelocks','侧鬓发','头发'],['with very long hair','超长发','头发'],['with messy hair','凌乱发','头发'],
-  ['with drill hair','钻头卷发','头发'],['with hair down','披发','头发'],
-  ['with red eyes','红眼','眼睛'],['with black eyes','黑眼','眼睛'],['with yellow eyes','黄眼','眼睛'],['with purple eyes','紫眼','眼睛'],
-  ['with pink eyes','粉眼','眼睛'],['with grey eyes','灰眼','眼睛'],['with heterochromia','异色瞳','眼睛'],['with large eyes','大眼睛','眼睛'],
-  ['with half-closed eyes','半闭眼','眼睛'],['with teary eyes','泪眼','眼睛'],['with glowing eyes','发光眼','眼睛'],['with dilated pupils','瞳孔放大','眼睛'],
-  ['with slit pupils','竖瞳','眼睛'],['with sparkling eyes','闪亮眼','眼睛'],['with long eyelashes','长睫毛','眼睛'],['with eye contact','对视','眼睛'],
-  ['with dark skin','深肤色','皮肤'],
-  ['with large breasts','大胸','身材'],['with huge breasts','巨乳','身材'],['with gigantic breasts','爆乳','身材'],['with small breasts','小胸','身材'],
-  ['with a flat chest','平胸','身材'],['with a voluptuous figure','丰腴','身材'],['with a narrow waist','细腰','身材'],['with thick thighs','粗腿','身材'],
-  ['with a big ass','大屁股','身材'],['with prominent collarbones','锁骨','身材'],['with an hourglass figure','沙漏身材','身材'],['with a petite figure','娇小身材','身材'],
-  ['with medium-sized breasts','中等胸','身材'],['with wide hips','宽胯','身材'],['with a chubby figure','微胖','身材'],['with a plump figure','丰满','身材'],
-]},
-{ name:'动作 / 姿势', multi:false, subs:['站姿','坐姿','躺姿','手部动作','视线/表情','表情','诱惑 / NSFW'], phrases:[
-  ['standing by a window','站在窗边','站姿'],['leaning against a wall','靠在墙上','站姿'],['standing with hands in pockets','手插口袋站着','站姿'],
-  ['standing in the doorway','站在门口','站姿'],['standing under an umbrella','撑伞站着','站姿'],['standing on a balcony','站在阳台','站姿'],['stretching her arms','伸展手臂','站姿'],
-  ['sitting on a couch','坐在沙发上','坐姿'],['sitting at a table','坐在桌边','坐姿'],['sitting on the floor','坐在地上','坐姿'],['sitting cross-legged','盘腿而坐','坐姿'],
-  ['sitting on a bench','坐在长椅上','坐姿'],['sitting at a cafe','坐在咖啡馆','坐姿'],['working at a desk','在办公桌前工作','坐姿'],
-  ['lying on a bed','躺在床上','躺姿'],['reclining on a sofa','斜倚在沙发上','躺姿'],['relaxing on a beach','在沙滩放松','躺姿'],['lying on the grass','躺在草地上','躺姿'],
-  ['holding a cup of coffee','端着咖啡','手部动作'],['touching her hair','拨弄头发','手部动作'],['folding her arms','双臂交叉','手部动作'],['pointing at something','指着某物','手部动作'],
-  ['holding a book','捧着一本书','手部动作'],['holding a flower','握着一朵花','手部动作'],['playing a guitar','弹吉他','手部动作'],['resting her chin on her hand','托腮','手部动作'],
-  ['looking at the camera','看着镜头','视线/表情'],['looking away','目光移开','视线/表情'],['looking over her shoulder','回眸','视线/表情'],['smiling softly','浅浅地笑','视线/表情'],
-  ['with a gentle smile','带着温柔微笑','视线/表情'],['laughing','大笑','视线/表情'],['with a calm expression','平静神情','视线/表情'],['with an intense gaze','专注凝视','视线/表情'],
-  ['lying on the bed looking seductively at the camera','躺在床上诱惑地看着镜头','诱惑 / NSFW'],['arching her back','弓起背部','诱惑 / NSFW'],['presenting herself to the camera','向镜头展现自己','诱惑 / NSFW'],['kneeling seductively','诱惑地跪着','诱惑 / NSFW'],
-  ['running a hand over her body','手抚过身体','诱惑 / NSFW'],['biting her lip seductively','诱惑地咬着嘴唇','诱惑 / NSFW'],['peeling off a shirt','缓缓脱衣','诱惑 / NSFW'],['winking seductively','诱惑地眨眼','诱惑 / NSFW'],
-  ['kneeling','跪姿','坐姿'],['squatting','蹲姿','坐姿'],['sitting on a bed','坐在床上','坐姿'],['straddling','跨坐','坐姿'],
-  ['spreading her legs','张开双腿','坐姿'],['kneeling on the floor','跪地','坐姿'],['lying on her stomach','俯卧','躺姿'],['on all fours','四肢着地/趴跪','躺姿'],
-  ['with her leg raised','抬腿','站姿'],['looking back','回头','视线/表情'],
-  ['raising her hand','举手','手部动作'],['with hands on her hips','叉腰','手部动作'],['making a peace sign','比耶/剪刀手','手部动作'],['taking a selfie','自拍','手部动作'],
-  ['making a heart with her hands','比心','手部动作'],['with hands behind her back','双手背后','手部动作'],['with her hand over her mouth','捂嘴','手部动作'],['with her arms up','双臂上举','手部动作'],
-  ['spreading her arms','张开双臂','手部动作'],['giving a thumbs up','竖大拇指','手部动作'],['with her fingers crossed','手指交叉/好运手势','手部动作'],['with her arms behind her head','双手抱头','手部动作'],
-  ['with a wide grin','咧嘴笑','表情'],['with a smirk','坏笑','表情'],['winking','眨眼','表情'],['sticking out her tongue','吐舌','表情'],
-  ['blushing','脸红','表情'],['looking embarrassed','尴尬','表情'],['with an innocent expression','无辜','表情'],['looking confused','困惑','表情'],
-  ['looking sad','悲伤','表情'],['crying','哭泣','表情'],['with tears in her eyes','含泪','表情'],['looking happy','开心','表情'],
-  ['looking surprised','惊讶','表情'],['looking nervous','紧张','表情'],['with a seductive look','诱惑','表情'],['with an ahegao expression','阿黑颜','表情'],
-  ['expressionless','面无表情','表情'],['with her mouth open','张嘴','表情'],['panting','喘息','表情'],['frowning','皱眉','表情'],
-  ['with her eyes closed','闭眼','表情'],['with a sideways glance','侧目/斜视','表情'],['moaning','呻吟','表情'],['with a lewd expression','色气/猥琐','表情'],
-  ['with a slutty look','放荡','表情'],['looking flustered','慌乱','表情'],['with a denial expression','否认','表情'],['with a yandere expression','病娇','表情'],
-  ['looking shy','害羞','表情'],['with a tsundere attitude','傲娇','表情'],['looking angry','生气','表情'],['pouting','嘟嘴','表情'],
-  ['masturbating','自慰','诱惑 / NSFW'],['with deep penetration','深度插入','诱惑 / NSFW'],['in the cowgirl position','女上位','诱惑 / NSFW'],['in the doggy style position','后入式','诱惑 / NSFW'],
-  ['performing fellatio','口交','诱惑 / NSFW'],['squirting','潮吹','诱惑 / NSFW'],['kissing','接吻','诱惑 / NSFW'],['caressing her body','爱抚身体','诱惑 / NSFW'],
-  ['fondling her breasts','揉乳','诱惑 / NSFW'],['squeezing her breasts','捏乳','诱惑 / NSFW'],['licking her pussy','舔舐阴部','诱惑 / NSFW'],['grinding against her','贴体磨蹭','诱惑 / NSFW'],
-  ['using a dildo','使用假阳具','诱惑 / NSFW'],['using a vibrator','使用振动棒','诱惑 / NSFW'],['playing with a sex toy','玩弄性玩具','诱惑 / NSFW'],['giving a handjob','手交','诱惑 / NSFW'],
-  ['giving a footjob','足交','诱惑 / NSFW'],['performing oral sex','口活','诱惑 / NSFW'],['with anal penetration','肛交','诱惑 / NSFW'],['with vaginal penetration','阴道性交','诱惑 / NSFW'],
-  ['having an orgasm','高潮中','诱惑 / NSFW'],['ejaculating','射精','诱惑 / NSFW'],['experiencing multiple orgasms','多次高潮','诱惑 / NSFW'],
-]},
-{ name:'服饰', multi:false, subs:['裙装','上衣','外套','制服/职业装','内衣/泳装','鞋/配饰','裸露 / NSFW'], phrases:[
-  ['wearing a white summer dress','白色夏装连衣裙','裙装'],['in a red evening gown','红色晚礼服','裙装'],['wearing a miniskirt','迷你裙','裙装'],['in a sundress','吊带连衣裙','裙装'],
-  ['in a floral dress','碎花连衣裙','裙装'],['in a maxi dress','长裙','裙装'],['in a wrap dress','裹身裙','裙装'],['wearing a black dress','黑色连衣裙','裙装'],
-  ['wearing a white blouse','白衬衫','上衣'],['wearing jeans and a t-shirt','牛仔裤配T恤','上衣'],['in a crop top','短上衣','上衣'],['in a tank top','背心','上衣'],
-  ['wearing a sweater','毛衣','上衣'],['in a silk blouse','真丝衬衫','上衣'],['in a polo shirt','Polo衫','上衣'],['in a flannel shirt','法兰绒衬衫','上衣'],
-  ['in a black leather jacket','黑色皮夹克','外套'],['wearing a trench coat','风衣','外套'],['in a denim jacket','牛仔外套','外套'],['in a winter coat','冬大衣','外套'],
-  ['in a blazer','西装外套','外套'],['in a hoodie','连帽衫','外套'],['in a fur coat','皮草外套','外套'],['in a hooded jacket','连帽夹克','外套'],
-  ['wearing a school uniform','校服','制服/职业装'],['in a business suit','商务西装','制服/职业装'],['in military uniform','军装','制服/职业装'],['in a kimono','和服','制服/职业装'],
-  ['wearing a nurse uniform','护士服','制服/职业装'],['in a maid outfit','女仆装','制服/职业装'],['wearing a wedding dress','婚纱','制服/职业装'],['in athletic wear','运动装','制服/职业装'],
-  ['wearing a swimsuit','泳装','内衣/泳装'],['in a silk robe','丝绸睡袍','内衣/泳装'],['wearing stockings','丝袜','内衣/泳装'],['in lingerie','蕾丝内衣','内衣/泳装'],
-  ['wearing heels','高跟鞋','鞋/配饰'],['wearing a scarf','围巾','鞋/配饰'],['wearing a hat','戴帽子','鞋/配饰'],['wearing gloves','手套','鞋/配饰'],
-  ['completely nude','全裸','裸露 / NSFW'],['wearing only lace lingerie','只穿蕾丝内衣','裸露 / NSFW'],['topless','半裸（露胸）','裸露 / NSFW'],['in a sheer nightgown','透视睡裙','裸露 / NSFW'],
-  ['wearing only a towel','只裹着浴巾','裸露 / NSFW'],['with a see-through blouse','透视衬衫','裸露 / NSFW'],['in revealing lingerie','性感蕾丝内衣','裸露 / NSFW'],['wearing only panties','只穿内裤','裸露 / NSFW'],
-  ['wearing a sailor uniform','水手服','制服/职业装'],['in a bikini','比基尼','内衣/泳装'],['in a one-piece swimsuit','连体泳衣','内衣/泳装'],['wearing a skirt','短裙','裙装'],
-  ['wearing thigh-highs','过膝袜','鞋/配饰'],['wearing pantyhose','连裤袜','鞋/配饰'],['in an off-shoulder top','露肩上衣','上衣'],['wearing a white shirt','白衬衫','上衣'],
-  ['in a tracksuit','运动套装','外套'],['wearing underwear','内衣','内衣/泳装'],['wearing lace underwear','蕾丝内衣','内衣/泳装'],['wearing a garter belt','吊袜带','内衣/泳装'],
-  ['in revealing clothes','穿着暴露','上衣'],['in short shorts','热裤','裙装'],['in a see-through top','透视上衣','上衣'],['showing cleavage','露出乳沟','上衣'],
-  ['wearing a yukata','浴衣','裙装'],['in a sarong','纱笼裹裙','裙装'],['crossdressing','男穿女装','裙装'],['wearing detached sleeves','分离袖','上衣'],
-  ['wearing boots','靴子','鞋/配饰'],['in a school swimsuit','学校泳装','内衣/泳装'],['in a bunny suit','兔女郎装','制服/职业装'],['in a cheerleader outfit','啦啦队服','制服/职业装'],
-  ['wearing a pleated skirt','百褶裙','裙装'],['wearing a white dress','白裙子','裙装'],['wearing panties','内裤','内衣/泳装'],
-  ['with lactating breasts','泌乳中','裸露 / NSFW'],['with exposed pussy','阴部露出','裸露 / NSFW'],['with a creampie dripping out','内射流精','裸露 / NSFW'],['covered in cum','满身精液','裸露 / NSFW'],
-  ['bound with rope','绳索束缚','裸露 / NSFW'],['in shibari rope bondage','日式绳缚','裸露 / NSFW'],['with exposed genital slit','阴缝露出','裸露 / NSFW'],['with spread pussy','阴部掰开','裸露 / NSFW'],
-  ['with exposed clitoris','阴蒂露出','裸露 / NSFW'],['with erect penis','勃起阴茎','裸露 / NSFW'],['with exposed testicles','睾丸露出','裸露 / NSFW'],['with erect nipples','乳头挺立','裸露 / NSFW'],
-  ['with exposed areolas','乳晕露出','裸露 / NSFW'],['covered in milk','满身牛奶','裸露 / NSFW'],['with breast milk dripping','母乳滴落','裸露 / NSFW'],
-]},
-{ name:'场景 / 环境', multi:false, subs:['室内','室外','自然','城市','时间/天气'], phrases:[
-  ['in a sunlit living room','阳光客厅','室内'],['in a cozy bedroom','温馨卧室','室内'],['in a modern kitchen','现代厨房','室内'],['in a dimly lit bar','昏暗酒吧','室内'],
-  ['in a coffee shop','咖啡馆','室内'],['in an office','办公室','室内'],['in a library','图书馆','室内'],['in a hotel room','酒店房间','室内'],
-  ['in a photo studio','摄影棚','室内'],['in a bathroom','浴室','室内'],['in a dressing room','化妆间','室内'],['in an old castle','古堡内','室内'],
-  ['on a beach at sunset','黄昏海滩','室外'],['on a rain-soaked city street','雨后城市街道','室外'],['in a garden full of flowers','繁花花园','室外'],['on a rooftop at night','夜晚屋顶','室外'],
-  ['at a bus stop','公交站','室外'],['in an alleyway','小巷里','室外'],['by a swimming pool','泳池边','室外'],['on a balcony overlooking the city','俯瞰城市的阳台','室外'],
-  ['in a forest clearing','林中空地','自然'],['by a lake','湖边','自然'],['on a mountain trail','山间小径','自然'],['in a snowy landscape','雪景','自然'],
-  ['in a desert','沙漠','自然'],['in a field of wildflowers','野花田','自然'],['under a blooming tree','花树下','自然'],['beside a waterfall','瀑布旁','自然'],
-  ['at a concert','演唱会现场','城市'],['in a gym','健身房','城市'],['in a supermarket','超市里','城市'],['on a subway','地铁上','城市'],
-  ['at a carnival','嘉年华','城市'],['at a wedding venue','婚礼现场','城市'],['in a restaurant','餐厅','城市'],['at a school gymnasium','学校体育馆','城市'],
-  ['in the golden hour','黄金时刻','时间/天气'],['in the rain','雨中','时间/天气'],['in the snow','雪中','时间/天气'],['at dusk','黄昏时分','时间/天气'],
-  ['in a shower','淋浴间里','室内'],['in a bathtub','浴缸里','室内'],['in the great outdoors','户外','室外'],['indoors','室内','室内'],
-  ['in a classroom','教室里','室内'],['on a couch','沙发上','室内'],['on a bed','床上','室内'],['at night','夜晚','时间/天气'],
-  ['in the daytime','白昼','时间/天气'],['under the open sky','天空下','自然'],['at a cherry blossom festival','樱花节上','室外'],['on the grass','草地上','自然'],
-  ['underwater','水下','自然'],['in a hot spring','温泉里','自然'],['in an onsen','日式温泉里','自然'],['in a park','公园里','室外'],
-  ['on a street','街道上','城市'],['in the city','城市里','城市'],['on a beach','海滩上','自然'],['in a forest','森林里','自然'],['in the mountains','山里','自然'],
-]},
-{ name:'光线', multi:false, subs:['自然光','人造光','风格光效'], phrases:[
-  ['soft window light','柔和的窗光','自然光'],['golden hour sunlight','黄金时刻阳光','自然光'],['overcast diffused light','阴天漫射光','自然光'],['harsh midday sun','正午强光','自然光'],
-  ['morning light through blinds','透过百叶窗的晨光','自然光'],['sunset backlight','日落逆光','自然光'],['moonlight','月光','自然光'],['sunlight through leaves','透过树叶的阳光','自然光'],
-  ['studio softbox lighting','影棚柔光箱','人造光'],['neon sign glow','霓虹灯光','人造光'],['candlelight','烛光','人造光'],['warm ambient light','暖色环境光','人造光'],
-  ['practical lamp light','台灯光','人造光'],['LED strip lighting','LED 灯带光','人造光'],['flashlight beam','手电光束','人造光'],['single overhead light','头顶单灯','人造光'],
-  ['dramatic rim lighting','戏剧性轮廓光','风格光效'],['cool blue moonlight','清冷蓝月光','风格光效'],['backlit silhouette','逆光剪影','风格光效'],['lens flare','镜头光晕','风格光效'],
-  ['cinematic teal and orange lighting','电影感青橙色调光','风格光效'],['low-key lighting','低调光','风格光效'],['high-key lighting','高调光','风格光效'],['glowing fireplace light','壁炉火光','风格光效'],
-  ['city lights bokeh','城市灯光散景','风格光效'],['fog-diffused light','雾气漫射光','风格光效'],['spotlight on the subject','聚光灯打在主体','风格光效'],['underwater sunlight','水下阳光','风格光效'],
-]},
-{ name:'镜头 / 风格', multi:false, subs:['镜头','构图','摄影风格','画风'], phrases:[
-  ['close-up portrait','特写人像','镜头'],['shallow depth of field','浅景深','镜头'],['85mm lens','85mm 镜头','镜头'],['full body shot','全身照','镜头'],
-  ['medium shot','中景','镜头'],['wide angle shot','广角','镜头'],['telephoto compression','长焦压缩','镜头'],['macro detail','微距细节','镜头'],
-  ['over-the-shoulder shot','过肩镜头','镜头'],['low angle shot','低角度','镜头'],['high angle shot','高角度','镜头'],['fisheye lens','鱼眼镜头','镜头'],
-  ['cinematic composition','电影构图','构图'],['Dutch angle','荷兰角','构图'],['bokeh background','背景散景','构图'],['symmetrical composition','对称构图','构图'],
-  ['rule of thirds','三分构图','构图'],['golden ratio composition','黄金分割构图','构图'],['silhouette shot','剪影','构图'],['frontal lighting','正面打光','构图'],
-  ['street photography style','街头摄影风格','摄影风格'],['fashion photography','时尚摄影','摄影风格'],['portrait photography','人像摄影','摄影风格'],['documentary style','纪实风格','摄影风格'],
-  ['editorial style','杂志编辑风','摄影风格'],['candid shot','抓拍','摄影风格'],['night photography','夜景摄影','摄影风格'],['long exposure','长曝光','摄影风格'],
-  ['anime style','动漫风格','画风'],['manhwa style','韩漫风格','画风'],['webtoon style','条漫风格','画风'],['cel shading','卡通着色','画风'],
-  ['semi-realistic style','半写实风格','画风'],['lineart','线稿','画风'],['watercolor style','水彩风格','画风'],['3D render style','3D渲染','画风'],
-  ['concept art style','概念设计','画风'],['illustration style','插画风格','画风'],['hand-drawn style','手绘风格','画风'],['sketch','素描','画风'],
-  ['oil painting style','油画风格','画风'],['pixel art style','像素艺术','画风'],['chibi style','Q版风格','画风'],['monochrome','单色','画风'],
-  ['high contrast','高对比度','画风'],['gradient background','渐变背景','画风'],['anime coloring','动漫上色','画风'],['thick outlines','粗描边','画风'],
-]},
-{ name:'负面词', multi:true, subs:['画质','身体缺陷','风格冲突','杂项'], phrases:[
-  ['blurry','模糊','画质'],['low quality','低质量','画质'],['worst quality','最差质量','画质'],['oversaturated','过饱和','画质'],
-  ['overexposed','过曝','画质'],['underexposed','欠曝','画质'],['grainy','颗粒感','画质'],['noise','噪点','画质'],
-  ['distorted face','脸部扭曲','身体缺陷'],['deformed hands','手部畸形','身体缺陷'],['extra fingers','多余手指','身体缺陷'],['bad anatomy','解剖错误','身体缺陷'],
-  ['mutated hands','变异手','身体缺陷'],['missing fingers','缺手指','身体缺陷'],['extra limbs','多余肢体','身体缺陷'],['malformed limbs','畸形肢体','身体缺陷'],
-  ['cartoon','卡通','风格冲突'],['anime','动漫','风格冲突'],['illustration','插画','风格冲突'],['3d render','3D渲染','风格冲突'],
-  ['painting','绘画','风格冲突'],['sketch','素描','风格冲突'],['stylized','风格化','风格冲突'],['cgi','CGI','风格冲突'],
-  ['watermark','水印','杂项'],['text','文字','杂项'],['signature','签名','杂项'],['username','用户名','杂项'],
-  ['logo','Logo','杂项'],['date stamp','日期戳','杂项'],['frame border','边框','杂项'],['cropped','裁切','杂项'],
-  ['low resolution','低分辨率','画质'],['bad hands','坏手','身体缺陷'],['bad fingers','坏手指','身体缺陷'],['deformed','畸形','身体缺陷'],
-  ['jpeg artifacts','JPEG 伪影','画质'],['mutation','变异','身体缺陷'],['poorly drawn face','脸部画得差','身体缺陷'],['poorly drawn hands','手部画得差','身体缺陷'],
-  ['poorly drawn body','身体画得差','身体缺陷'],['ugly','丑陋','画质'],['morbid','病态猎奇','杂项'],['multiple breasts','多乳房','身体缺陷'],
-  ['amputee','截肢者','身体缺陷'],['gross proportions','比例失衡','身体缺陷'],['long neck','长脖子','身体缺陷'],['duplicate','重复画面','杂项'],
-  ['monochrome','单色','风格冲突'],['greyscale','灰度','风格冲突'],['censored','打码遮挡','杂项'],['distorted','扭曲变形','身体缺陷'],
-]},
-];
-
-const NEG_DEFAULT = ['blurry','low quality','worst quality','distorted face','deformed hands','extra fingers','bad anatomy','oversaturated','cartoon','anime','illustration','3d render','watermark','text'];
-
-/* ============ 状态 ============ */
-let activeSlot = 0, activeSub = '';
-let sel = new Map();            // slotIndex -> [{en,zh,w}]
-let favSet = new Set(JSON.parse(localStorage.getItem('nlp_fav')||'[]'));
-let favOnly = false;
-let weightTarget = null;
-const $ = id => document.getElementById(id);
-const NEG_IDX = 8;
-
-/* ============ 拼装 ============ */
-function fmtPhrase(p){ return p.w ? `(${p.en}:${p.w})` : p.en; }
-function assemble(){
-  const parts=[];
-  SLOTS.forEach((slot,i)=>{
-    if(i===NEG_IDX) return;
-    (sel.get(i)||[]).forEach(p=>parts.push(fmtPhrase(p)));
-  });
-  return parts.join(', ');
-}
-function assembleNeg(){
-  const parts=(sel.get(NEG_IDX)||[]).map(p=>fmtPhrase(p));
-  const extra=$('negExtra').value.trim();
-  if(extra) parts.push(extra);
-  return parts.join(', ');
-}
-
-/* ============ 渲染 ============ */
-function renderSlotNav(){
-  document.querySelectorAll('#slotNav button').forEach(b=>{
-    b.classList.toggle('active', +b.dataset.i===activeSlot);
-  });
-}
-function renderSlotHead(){
-  const s=SLOTS[activeSlot];
-  $('slotTitle').textContent = s.name;
-  $('slotHint').textContent = (activeSlot===NEG_IDX) ? '可多选 · 点选加入负面词' : (s.multi?'可多选 · 点选加入 / 再点取消':'单选 · 点选即替换');
-}
-function renderSubbar(){
-  const s=SLOTS[activeSlot];
-  const bar=$('subbar');
-  bar.innerHTML='<button class="'+(activeSub===''?'active':'')+'" data-s="">全部</button>'+s.subs.map(sub=>`<button class="${activeSub===sub?'active':''}" data-s="${sub}">${sub}</button>`).join('');
-  bar.querySelectorAll('button').forEach(b=>b.onclick=()=>{ activeSub=b.dataset.s; renderSubbar(); renderPhrases(); });
-}
-function renderPhrases(){
-  const s=SLOTS[activeSlot];
-  const grid=$('phraseGrid');
-  const pool = activeSub ? s.phrases.filter(p=>p[2]===activeSub) : s.phrases;
-  if(favOnly){ const keep=pool.filter(([en])=>favSet.has(en)); grid.innerHTML = keep.length? '' : '<span class="empty">该分类暂无收藏，点 ★ 收藏短语后可「仅看收藏」</span>'; }
-  grid.innerHTML='';
-  pool.forEach(([en,zh])=>{
-    if(favOnly && !favSet.has(en)) return;
-    const arr=sel.get(activeSlot)||[];
-    const isSel=arr.some(p=>p.en===en);
-    const isFav=favSet.has(en);
-    const ph=arr.find(p=>p.en===en);
-    const cls=(activeSlot===NEG_IDX)?(isSel?'phrase neg-sel':'phrase'):(isSel?'phrase sel':'phrase');
-    const d=document.createElement('button');
-    d.className=cls+(isFav?' faved':'');
-    d.innerHTML=`<span class="en">${en}</span><span class="zh">${zh}</span><span class="wgt">${ph&&ph.w?('权重 '+ph.w):''}</span><span class="fav-star">${isFav?'★':'☆'}</span>`;
-    d.onclick=()=>toggleSelect(en,zh);
-    d.oncontextmenu=e=>{ e.preventDefault(); openWeight(activeSlot,en); };
-    d.querySelector('.fav-star').onclick=e=>{ e.stopPropagation(); toggleFav(en); };
-    grid.appendChild(d);
-  });
-}
-function toggleSelect(en,zh){
-  const s=SLOTS[activeSlot];
-  let arr=sel.get(activeSlot)||[];
-  const idx=arr.findIndex(p=>p.en===en);
-  if(idx>=0){ arr.splice(idx,1); }
-  else { if(!s.multi) arr=[]; arr.push({en,zh,w:null}); }
-  if(arr.length) sel.set(activeSlot,arr); else sel.delete(activeSlot);
-  refresh();
-}
-function toggleFav(en){
-  if(favSet.has(en)) favSet.delete(en); else favSet.add(en);
-  localStorage.setItem('nlp_fav', JSON.stringify([...favSet]));
-  renderPhrases();
-}
-
-function renderPreview(){
-  const posBox=$('posBox'), negBox=$('negBox');
-  // 正面
-  const posParts=[];
-  SLOTS.forEach((slot,i)=>{ if(i===NEG_IDX) return; (sel.get(i)||[]).forEach(p=>posParts.push({slot:i,...p})); });
-  posBox.innerHTML = posParts.length ? '' : '<span class="empty">在右侧选短语，会自动拼成一句自然语言提示词…</span>';
-  posParts.forEach(p=>posBox.appendChild(chipEl(p,'pos')));
-  // 负面
-  const negParts=(sel.get(NEG_IDX)||[]).map(p=>({slot:NEG_IDX,...p}));
-  negBox.innerHTML = negParts.length ? '' : '<span class="empty">在「⑨ 负面词」槽位点选，可拖动排序</span>';
-  negParts.forEach(p=>negBox.appendChild(chipEl(p,'neg')));
-}
-function chipEl(p,kind){
-  const c=document.createElement('span');
-  c.className='chip '+kind; c.draggable=true;
-  c.innerHTML=`${fmtPhrase(p)}<span class="x" title="删除">×</span>${p.w?'<span class="w" title="右键改权重">'+p.w+'</span>':''}`;
-  c.querySelector('.x').onclick=()=>removePart(p.slot,p.en);
-  c.oncontextmenu=e=>{ e.preventDefault(); openWeight(p.slot,p.en); };
-  return c;
-}
-function removePart(slotIdx,en){
-  let arr=sel.get(slotIdx)||[];
-  arr=arr.filter(p=>p.en!==en);
-  if(arr.length) sel.set(slotIdx,arr); else sel.delete(slotIdx);
-  refresh();
-}
-function refresh(){ renderPreview(); renderPhrases(); }
-
-/* ============ 权重 ============ */
-function openWeight(slotIdx,en){
-  const arr=sel.get(slotIdx)||[];
-  const p=arr.find(x=>x.en===en);
-  if(!p) return;
-  weightTarget={slotIdx,en};
-  $('wInput').value=p.w||'1.2';
-  const pop=$('weightPop'); pop.classList.add('show');
-  const r=$('posBox').getBoundingClientRect();
-  pop.style.left=(r.left+40)+'px'; pop.style.top=(r.top+r.height+8)+'px';
-}
-function closeWeight(){ $('weightPop').classList.remove('show'); weightTarget=null; }
-function setWeight(v){
-  if(!weightTarget) return;
-  const {slotIdx,en}=weightTarget;
-  const arr=sel.get(slotIdx)||[];
-  const p=arr.find(x=>x.en===en);
-  if(p) p.w=(v===1||!v)?null:Math.round(v*10)/10;
-  refresh();
-}
-$('wInc').onclick=()=>{ const v=(parseFloat($('wInput').value)||1)+0.1; $('wInput').value=v; setWeight(v); };
-$('wDec').onclick=()=>{ const v=(parseFloat($('wInput').value)||1)-0.1; $('wInput').value=v; setWeight(v); };
-$('wReset').onclick=()=>{ $('wInput').value='1'; setWeight(1); };
-$('wClose').onclick=closeWeight;
-$('wInput').addEventListener('change',()=>{ setWeight(parseFloat($('wInput').value)||1); });
-document.addEventListener('click',e=>{ if(!e.target.closest('#weightPop')) closeWeight(); });
-
-/* ============ 动作 ============ */
-$('randBtn').onclick=()=>{
-  sel.clear();
-  SLOTS.forEach((slot,i)=>{
-    let pool=favOnly?slot.phrases.filter(([en])=>favSet.has(en)):slot.phrases;
-    if(!pool.length) pool=slot.phrases;
-    const [en,zh]=pool[Math.floor(Math.random()*pool.length)];
-    sel.set(i,[{en,zh,w:null}]);
-  });
-  refresh();
+const $=id=>document.getElementById(id);
+const LS='promptConvCfg';
+const PROVIDERS={
+  local:{base:'http://127.0.0.1:4001/v1',model:''},
+  openai:{base:'https://api.openai.com/v1',model:'gpt-4o-mini'},
+  deepseek:{base:'https://api.deepseek.com/v1',model:'deepseek-chat'},
+  custom:{base:'',model:''}
 };
-$('favOnlyBtn').onclick=()=>{ favOnly=!favOnly; $('favOnlyBtn').classList.toggle('btn-fav-on',favOnly); renderPhrases(); };
-$('clearBtn').onclick=()=>{ sel.clear(); refresh(); };
-$('copyPosBtn').onclick=async()=>{
-  const t=assemble();
-  if(!t){ flash('先选几个短语'); return; }
-  const ok=await copyText(t);
-  flash(ok?'✅ 正面已复制':'已弹出文本框，请手动复制（Ctrl+C）');
-};
-$('copyNegBtn').onclick=async()=>{
-  const t=assembleNeg();
-  if(!t){ flash('负面为空'); return; }
-  const ok=await copyText(t);
-  flash(ok?'✅ 负面已复制':'已弹出文本框，请手动复制（Ctrl+C）');
-};
-async function copyText(text){
-  if(navigator.clipboard && window.isSecureContext){
-    try{ await navigator.clipboard.writeText(text); return true; }catch(e){}
-  }
+let cfg=JSON.parse(localStorage.getItem(LS)||'null')||{provider:'local',base:'',model:'',key:''};
+
+function ensureModelOption(v){
+  const sel=$('modelName');
+  if(!v) return;
+  if(![...sel.options].some(o=>o.value===v)){ const o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); }
+  sel.value=v;
+}
+function applyCfg(){
+  $('provider').value=cfg.provider;
+  $('baseUrl').value=cfg.base||PROVIDERS[cfg.provider].base;
+  ensureModelOption(cfg.model||PROVIDERS[cfg.provider].model);
+  $('apiKey').value=cfg.key||'';
+  if(cfg.provider==='local') loadModels();
+}
+function saveCfg(){
+  cfg={provider:$('provider').value,base:$('baseUrl').value.trim(),model:$('modelName').value.trim(),key:$('apiKey').value.trim()};
+  localStorage.setItem(LS,JSON.stringify(cfg));
+}
+async function loadModels(){
+  const base=$('baseUrl').value.trim().replace(/\/+$/,'');
+  const key=$('apiKey').value.trim();
+  const sel=$('modelName');
+  if(!base){ sel.innerHTML='<option value="">（先填 Base URL）</option>'; return; }
+  sel.innerHTML='<option value="">（加载中…）</option>';
   try{
-    const ta=document.createElement('textarea');
-    ta.value=text; ta.style.cssText='position:fixed;top:-1000px;opacity:0';
-    document.body.appendChild(ta); ta.focus(); ta.select();
-    const ok=document.execCommand('copy');
-    document.body.removeChild(ta);
-    if(ok) return true;
-  }catch(e){}
-  showCopyModal(text);
-  return false;
-}
-function showCopyModal(text){
-  let m=document.getElementById('copyModal');
-  if(!m){
-    m=document.createElement('div'); m.id='copyModal';
-    m.innerHTML='<div class="cm-box"><div class="cm-head">复制提示词（Ctrl+C）<button class="cm-close">✕</button></div><textarea class="cm-text"></textarea></div>';
-    document.body.appendChild(m);
-    m.querySelector('.cm-close').onclick=()=>m.remove();
-    m.addEventListener('click',e=>{ if(e.target===m) m.remove(); });
+    const headers={}; if(key) headers['Authorization']='Bearer '+key;
+    const r=await fetch(base+'/models',{headers,signal:AbortSignal.timeout(8000)});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    let ids=(d.data||[]).map(m=>m.id).filter(Boolean);
+    if($('provider').value==='local') ids=ids.map(id=>id.replace(/^models\//,'').split(/[\\/]/).pop());
+    if($('provider').value==='openai') ids=ids.filter(id=>!/embedding|whisper|audio|tts|davinci|realtime|moderation|rerank/i.test(id));
+    if(!ids.length) throw new Error('接口没返回模型');
+    sel.innerHTML='<option value="">（选择模型）</option>'+ids.map(id=>`<option value="${id}">${id}</option>`).join('');
+  }catch(e){
+    sel.innerHTML='<option value="">（加载失败：'+e.message+'）</option>';
   }
-  m.querySelector('.cm-text').value=text;
-  m.classList.add('show');
-  const ta=m.querySelector('.cm-text'); ta.focus(); ta.select();
 }
-
-/* ============ 预设 ============ */
-$('savePresetBtn').onclick=()=>{
-  const flat=[];
-  SLOTS.forEach((slot,i)=>(sel.get(i)||[]).forEach(p=>flat.push({i,en:p.en,zh:p.zh,w:p.w})));
-  if(!flat.length){ flash('先选几个短语再存'); return; }
-  const name=prompt('预设名称：','组合 '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}));
-  if(!name) return;
-  const presets=JSON.parse(localStorage.getItem('nlp_presets')||'{}');
-  presets[name]=flat;
-  localStorage.setItem('nlp_presets',JSON.stringify(presets));
-  renderPresets(name);
-  flash('✅ 已保存预设');
-};
-$('presetSel').onchange=()=>{
-  const name=$('presetSel').value; if(!name) return;
-  const presets=JSON.parse(localStorage.getItem('nlp_presets')||'{}');
-  const flat=presets[name]; if(!flat) return;
-  sel.clear();
-  flat.forEach(p=>{ const arr=sel.get(p.i)||[]; arr.push({en:p.en,zh:p.zh,w:p.w}); sel.set(p.i,arr); });
-  refresh();
-};
-$('delPresetBtn').onclick=()=>{
-  const name=$('presetSel').value;
-  if(!name){ flash('先在预设下拉里选中要删的预设'); return; }
-  const presets=JSON.parse(localStorage.getItem('nlp_presets')||'{}');
-  delete presets[name];
-  localStorage.setItem('nlp_presets',JSON.stringify(presets));
-  renderPresets();
-  flash('✅ 已删除预设「'+name+'」');
-};
-function renderPresets(selName){
-  const presets=JSON.parse(localStorage.getItem('nlp_presets')||'{}');
-  $('presetSel').innerHTML='<option value="">预设</option>'+Object.keys(presets).map(n=>`<option ${n===selName?'selected':''}>${n}</option>`).join('');
-}
-function flash(msg){
-  const old=$('flashMsg'); if(old) old.remove();
-  const s=document.createElement('div');
-  s.id='flashMsg'; s.textContent=msg;
-  s.style.cssText='position:fixed;top:60px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:.5rem 1rem;border-radius:8px;z-index:300;font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,.3)';
-  document.body.appendChild(s);
-  setTimeout(()=>s.remove(),1500);
-}
-
-/* ============ 槽位 / 主题 ============ */
-document.querySelectorAll('#slotNav button').forEach(b=>{
-  b.onclick=()=>{ activeSlot=+b.dataset.i; activeSub=''; renderSlotNav(); renderSlotHead(); renderSubbar(); renderPhrases(); };
+$('provider').addEventListener('change',()=>{
+  const p=$('provider').value;
+  if(p!=='custom') $('baseUrl').value=PROVIDERS[p].base;
+  if(p==='local'){ $('modelName').innerHTML='<option value="">（点击载入模型列表）</option>'; loadModels(); }
+  else ensureModelOption(PROVIDERS[p].model);
+  saveCfg();
 });
-$('themeBtn').onclick=()=>{
-  const cur=document.documentElement.getAttribute('data-theme');
-  document.documentElement.setAttribute('data-theme', cur==='dark'?'light':'dark');
-};
-$('negExtra').addEventListener('input',()=>{ /* 额外负面实时生效于 assembleNeg */ });
+$('baseUrl').addEventListener('change',saveCfg);
+$('modelName').addEventListener('change',saveCfg);
+$('apiKey').addEventListener('change',saveCfg);
+$('loadModels').addEventListener('click',loadModels);
 
-/* ============ 启动：预选默认负面词 ============ */
-NEG_DEFAULT.forEach(en=>{
-  const ph=SLOTS[NEG_IDX].phrases.find(p=>p[0]===en);
-  if(ph){
-    const arr=sel.get(NEG_IDX)||[];
-    if(!arr.some(p=>p.en===en)) arr.push({en:ph[0],zh:ph[1],w:null});
-    sel.set(NEG_IDX,arr);
+/* ============ 直白词典（知识库） ============ */
+const DICT={
+  '胸部':'breasts','巨乳':'huge breasts','乳头':'nipples','乳头立起':'erect nipples','乳晕':'areola',
+  '裸体':'nude','全裸':'completely nude','半裸':'topless','小穴':'pussy','阴蒂':'clitoris','阴唇':'labia',
+  '湿润':'wet pussy','爱液':'pussy juice','阴茎':'cock','龟头':'glans','臀部':'ass','臀部特写':'ass focus',
+  '大腿':'thighs','腹部':'abs','背部':'back','腋下':'armpits','脚':'feet','脚趾':'toes',
+  '嘴唇':'glossy lips','舌头':'tongue','张开嘴':'open mouth','眼睛':'eyes',
+  '张开双腿':'spread legs','双腿大开':'legs spread wide','自慰':'masturbating','手指插入':'fingering self',
+  '插入':'penetration','口交':'oral sex','乳交':'titjob','后入':'doggy style','骑乘位':'cowgirl position',
+  '传教士':'missionary position','69式':'69 position','内射':'cum inside','颜射':'cum on face','射精':'cumshot',
+  '潮吹':'squirting','高潮':'orgasm','高潮脸':'ahegao','束缚':'bondage','跪姿':'kneeling','俯身':'bent over',
+  '躺着':'lying down','站立':'standing','翘臀':'arched back','抬腿':'legs up','磨蹭':'grinding','舔':'licking',
+  '吸吮':'sucking','咬唇':'biting lip','脱衣':'undressing','湿透':'soaked','摆出姿势':'posing',
+  '脸红':'blushing','媚眼':'lustful eyes','挑逗':'teasing','眼神迷离':'glazed eyes','淫荡表情':'lewd expression',
+  '看向镜头':'looking at viewer','勾人':'seductive',
+  '内衣':'lingerie','蕾丝':'lace','黑丝':'black stockings','吊带袜':'thighhighs','丁字裤':'thong',
+  '胸罩':'bra','撩起裙子':'skirt lifted','不穿内裤':'no panties','光脚':'barefoot',
+  '真实照片':'RAW photo','电影感':'cinematic','胶片颗粒':'film grain','柔光':'soft light','窗边光':'window light',
+  '黄金时刻':'golden hour','影棚光':'studio lighting','侧光':'rim lighting','浅景深':'shallow depth of field',
+  '85mm':'85mm f/1.4','50mm':'50mm f/1.8','胶片模拟':'Kodak Portra 400','锐利对焦':'sharp focus',
+  '高分辨率':'8k','皮肤细节':'detailed skin texture','专业摄影':'professional photography','杂志风':'magazine quality',
+  '杰作':'masterpiece','最佳质量':'best quality','最新':'newest','高分辨率标签':'absurdres',
+  '一个女孩':'1girl','一个男孩':'1boy','单独':'solo','长发':'long hair','短发':'short hair',
+  '黑发':'black hair','金发':'blonde hair','银发':'silver hair','红瞳':'red eyes','蓝瞳':'blue eyes',
+  '详细背景':'detailed background','详细脸':'detailed face','大胸':'large breasts','细腰':'thin waist'
+};
+const NSFW_LV={0:'保守：只用暗示词（nude, seductive），不写具体部位。',
+               1:'标准：可写基础显式词（breasts, nude）。',
+               2:'直白：写具体部位与动作（pussy, spread legs, nipples），有 NSFW 需求就写显式。',
+               3:'高度直白：写最显式的词（wet pussy, penetration, cum），不回避任何部位词。'};
+
+function buildSystemPrompt(mode,lv){
+  const dictText=Object.entries(DICT).map(([k,v])=>k+'→'+v).join(', ');
+  const lvLine=NSFW_LV[lv];
+  if(mode==='nl'){
+    return '你是 SDXL 提示词转换器。把用户的中文需求改写成英文 Stable Diffusion 提示词。\n'
+     +'硬性规则：\n'
+     +'1. 只输出英文提示词本身，不解释、不写 markdown、不加前后缀。\n'
+     +'2. 措辞直白：命中下方词典的词必须用词典英文词；词典没有的也直白翻译，禁止委婉语、禁止自造近义词。\n'
+     +'3. 以 "RAW photo" 开头；包含相机/镜头词（如 85mm f/1.4）和光线词。\n'
+     +'4. 用短关键词短语，不要完整句子、不要从句、不要否定句。\n'
+     +'5. 主体描述控制在 75 token 内；质量词（8k, detailed skin texture, professional photography）放末尾。\n'
+     +'6. 直白度：'+lvLine+'\n'
+     +'词典：'+dictText+'\n'
+     +'示例：\n'
+     +'用户：一个年轻女人躺在床上，裸体，张开双腿，露出湿润的小穴，看着镜头，眼神勾人，室内暖光，电影感\n'
+     +'输出：RAW photo, young woman lying on bed, completely nude, spread legs, wet pussy, looking at viewer, seductive eyes, warm indoor lighting, 85mm f/1.4, shallow depth of field, film grain, professional photography, 8k, detailed skin texture';
+  }
+  return '你是 SDXL 提示词转换器（Danbooru 标签模式）。把中文需求转成逗号分隔的英文 Danbooru 标签。\n'
+     +'硬性规则：\n'
+     +'1. 只输出逗号分隔的英文标签，不解释、不写 markdown。\n'
+     +'2. 命中词典的词用词典英文标签；用标准 Danbooru 标签（1girl, solo, nude…）。\n'
+     +'3. 开头加质量前缀：masterpiece, best quality, newest, absurdres\n'
+     +'4. NSFW 用显式标签（nude, spread legs, pussy, large breasts, nipples），禁止委婉。\n'
+     +'5. 主体标签在前，场景/细节在后。\n'
+     +'6. 直白度：'+lvLine+'\n'
+     +'词典：'+dictText+'\n'
+     +'示例：\n'
+     +'用户：一个女孩裸体站着，大胸，乳头立起，双腿张开，看着镜头，长发，红瞳，详细背景，杰作\n'
+     +'输出：masterpiece, best quality, newest, absurdres, 1girl, solo, nude, standing, spread legs, large breasts, erect nipples, looking at viewer, long hair, red eyes, detailed background';
+}
+
+/* ============ 负面提示词 ============ */
+const DEFAULT_NEG_TAG='easynegative, bad-hands, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digits, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, ugly, deformed, multiple views';
+const DEFAULT_NEG_NL='worst quality, low quality, lowres, bad anatomy, bad hands, missing fingers, extra digits, fewer digits, cropped, jpeg artifacts, signature, watermark, blurry, ugly, deformed, disfigured, text, error';
+function buildNegSystemPrompt(mode){
+  if(mode==='tag'){
+    return '你是 SDXL 负面提示词生成器（Danbooru 标签模式）。根据正向提示词生成对应的英文负面提示词（逗号分隔标签）：列出应避免的质量问题（low quality, bad hands）、畸变、文字/水印、多余肢体、以及用户可能不想出现的元素。以 easynegative, bad-hands 开头。只输出标签，不解释、不写 markdown。';
+  }
+  return '你是 SDXL 负面提示词生成器。根据正向提示词生成对应的英文负面提示词（短关键词短语，逗号分隔）：列出应避免的质量问题与畸变（low quality, bad anatomy, blurry, watermark 等）。只输出提示词本身，不解释、不写 markdown。';
+}
+
+/* ============ 交互 ============ */
+let mode='tag';
+$('modeRadios').addEventListener('click',e=>{
+  const r=e.target.closest('.radio'); if(!r)return;
+  mode=r.dataset.mode;
+  document.querySelectorAll('.radio').forEach(x=>x.classList.toggle('on',x===r));
+});
+$('nsfw').addEventListener('input',()=>{
+  $('nsfwVal').textContent=NSFW_LV[+$('nsfw').value].split('：')[0];
+});
+
+async function pingLocal(){
+  try{
+    const r=await fetch('http://127.0.0.1:4001/v1/models',{signal:AbortSignal.timeout(3000)});
+    const s=$('status'); s.className='status ok'; s.innerHTML='<span class="dot"></span>本地后端已连接';
+  }catch(e){
+    const s=$('status'); s.className='status bad'; s.innerHTML='<span class="dot"></span>本地后端未启动';
+  }
+}
+setInterval(pingLocal,6000);
+
+$('goBtn').addEventListener('click',async()=>{
+  const req=$('req').value.trim(); const out=$('out'); const err=$('err');
+  if(!req){ err.textContent='请先输入中文需求'; err.style.display='block'; return; }
+  saveCfg();
+  const base=$('baseUrl').value.trim().replace(/\/+$/,'');
+  const model=$('modelName').value.trim();
+  const key=$('apiKey').value.trim();
+  if(!base||!model){ err.textContent='Base URL 和模型名不能为空'; err.style.display='block'; return; }
+  if($('provider').value!=='local'&&!key){ err.textContent='在线源需要 API Key'; err.style.display='block'; return; }
+  err.style.display='none'; out.value='转换中…';
+  const headers={'Content-Type':'application/json'};
+  if(key) headers['Authorization']='Bearer '+key;
+  try{
+    const res=await fetch(base+'/chat/completions',{method:'POST',headers,signal:AbortSignal.timeout(180000),
+      body:JSON.stringify({model,messages:[
+        {role:'system',content:buildSystemPrompt(mode,+$('nsfw').value)},
+        {role:'user',content:req}
+      ],temperature:0.2,max_tokens:2048,chat_template_kwargs:{enable_thinking:false}})});
+    if(!res.ok){ const t=await res.text(); throw new Error('HTTP '+res.status+' '+(t.slice(0,200))); }
+    const d=await res.json();
+    out.value=(d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content||'').trim();
+    if(!out.value) throw new Error('空响应');
+    // 负面提示词：本地模型用通用默认（负担重），在线模型实时生成
+    const neg=$('neg');
+    if($('provider').value==='local'){
+      neg.value=mode==='tag'?DEFAULT_NEG_TAG:DEFAULT_NEG_NL;
+    }else{
+      neg.value='生成中…';
+      try{
+        const r2=await fetch(base+'/chat/completions',{method:'POST',headers,signal:AbortSignal.timeout(180000),
+          body:JSON.stringify({model,messages:[
+            {role:'system',content:buildNegSystemPrompt(mode)},
+            {role:'user',content:'正向提示词：'+out.value}
+          ],temperature:0.2,max_tokens:2048,chat_template_kwargs:{enable_thinking:false}})});
+        if(r2.ok){
+          const d2=await r2.json();
+          const nv=(d2.choices&&d2.choices[0]&&d2.choices[0].message&&d2.choices[0].message.content||'').trim();
+          neg.value=nv||(mode==='tag'?DEFAULT_NEG_TAG:DEFAULT_NEG_NL);
+        }else{ neg.value=mode==='tag'?DEFAULT_NEG_TAG:DEFAULT_NEG_NL; }
+      }catch(e2){ neg.value=mode==='tag'?DEFAULT_NEG_TAG:DEFAULT_NEG_NL; }
+    }
+  }catch(e){
+    err.textContent='转换失败：'+e.message+'（本地源需先启动 llama-server；在线源检查 Key/网络）';
+    err.style.display='block'; out.value=''; $('neg').value='';
   }
 });
-renderPresets();
-renderSlotNav();
-renderSlotHead();
-renderSubbar();
-refresh();
-})();
+
+$('copyBtn').addEventListener('click',async()=>{
+  const out=$('out').value; if(!out)return;
+  try{ await navigator.clipboard.writeText(out); $('copyBtn').textContent='✓ 已复制'; }
+  catch(e){ out.select(); document.execCommand('copy'); $('copyBtn').textContent='✓ 已复制'; }
+  setTimeout(()=>$('copyBtn').textContent='📋 复制',1500);
+});
+
+$('copyNegBtn').addEventListener('click',async()=>{
+  const neg=$('neg').value; if(!neg)return;
+  try{ await navigator.clipboard.writeText(neg); $('copyNegBtn').textContent='✓ 已复制'; }
+  catch(e){ $('neg').select(); document.execCommand('copy'); $('copyNegBtn').textContent='✓ 已复制'; }
+  setTimeout(()=>$('copyNegBtn').textContent='📋 复制负面',1500);
+});
+
+$('exBtn').addEventListener('click',()=>{
+  $('req').value='一个年轻女人躺在床上，裸体，张开双腿，露出湿润的小穴，看着镜头，眼神勾人，室内暖光，电影感';
+});
+
+$('themeBtn').addEventListener('click',()=>{
+  const t=document.documentElement.dataset.theme==='dark'?'light':'dark';
+  document.documentElement.dataset.theme=t;
+  $('themeBtn').textContent=t==='dark'?'🌓 切换浅色':'🌙 切换深色';
+});
+
+applyCfg(); pingLocal();
 </script>
 </body>
 </html>

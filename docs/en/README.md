@@ -1,70 +1,60 @@
-# Realistic Prompt Generator v1.0.1
+# SD Prompt Converter
 
-[**中文简体**](../../README.md) | **English**
+[**中文**](../README.md) | **English**
 
-A local, offline realistic-model prompt generator: **click slot phrases to auto-assemble a natural-language English prompt**. Single-file, zero-dependency, double-click to run.
-
-## Compatible models
-
-**RealVis XL V5.0 / Juggernaut v9** and other natural-language realistic models (they expect full sentences, not Danbooru tags). Complements the "AI Drawing Prompt Supermarket" (tag-style, for NoobAI / Manhwa).
-
-## Related tool
-
-Tag-based models (NoobAI / Manhwa)? Use the **AI Drawing Prompt Supermarket** (Danbooru tag point-and-assemble):
-
-👉 [ai-prompt-supermarket](https://github.com/BFRKQSB7/ai-prompt-supermarket) · [online](https://bfrkqsb7.github.io/ai-prompt-supermarket/)
-
-**When to go there**: your model is tag-based (NoobAI / Manhwa); this tool serves natural-language types (RealVis / Juggernaut).
+Converts Chinese prompts (free-form scene descriptions, NSFW welcome) into **explicit English Stable Diffusion prompts**. Single-file, zero dependencies, runs in the browser.
 
 ## Features
 
-- **Slot-based assembly**: 9 slots (8 positive + ⑨ negative words). Clicking phrases auto-assembles a coherent English prompt in fixed order; negatives are also clickable with sensible pre-selected defaults
-- **Subcategories**: every slot has subcategory filters (e.g. clothing → dresses / tops / outerwear / nude…), easy to find
-- **~500 curated phrases**: all with Chinese annotations, photography-oriented (lighting / lens / texture) to fit realistic models
-- **NSFW support**: "nude / NSFW" under clothing and "seductive / NSFW" under action, for adult self-use
-- **Weights**: right-click a phrase or chip to set `(phrase:1.2)` weight
-- **Inspiration shuffle**: one click picks a random phrase per slot and assembles
-- **Favorites**: ★ favorite phrases, persisted across sessions, with "favorites only" filter
-- **Presets**: save / load favorite combinations
-- **Drag reorder**: drag chips to change phrase order
-- **Dark mode** + one-click copy for positive / negative (copy has a 3-tier fallback, works in any environment)
+- **Tag flow** (NoobAI / Pony / Manhwa): Danbooru tags + `masterpiece, best quality, newest, absurdres` quality prefix
+- **Natural-language flow** (RealVis / Juggernaut): `RAW photo`-led natural-language prompt + camera/lens/lighting words
+- **NSFW directness slider** (conservative / standard / direct / very direct)
+- **Built-in explicit dictionary** as knowledge base — matched words use standard English, no euphemisms
+- **Auto negative prompt**: local models fill a universal default; online models generate a matching negative in real time
+- **Multiple backends**: local llama / OpenAI / DeepSeek / custom (OpenAI-compatible)
 
-## Usage
+## Quick Start
 
-Open `index.html`, pick a slot on the left, click phrases in the middle, and the prompt assembles at the top for one-click copy.
+1. Download `index.html`, open it in a browser (no install)
+2. Pick a "model source" → fill Base URL / model / key → type a Chinese prompt → click convert
+3. Copy the result into SD WebUI / ComfyUI
 
-## Online (GitHub Pages)
+## Backends
 
-**https://bfrkqsb7.github.io/realistic-prompt-generator/**
+| Backend | Config | Notes |
+|---------|--------|-------|
+| **Local llama** | Base URL `http://127.0.0.1:4001/v1` | start an OpenAI-compatible llama-server locally (e.g. Qwen3-4B) |
+| **OpenAI** | official API | fill in a key |
+| **DeepSeek** | official API | fill in a key |
+| **Custom** | any OpenAI-compatible endpoint | e.g. the opencode gateway (below) |
 
-- The online version is identical to the local one (same `index.html`)
-- The local version works offline (all data inlined, double-click to open)
+### Using the opencode API (needs a local proxy)
 
-## Changelog
+The opencode gateway **`https://opencode.ai/zen/go/v1`** sends no CORS headers, so a browser page can't call it directly. Use the bundled local proxy:
 
-### v1.3.0
-- **Added**: imported the supermarket's curated common tags and converted them into natural-language phrases (~245), adapted per slot
-- **Added**: new subcategories — subject "count", action "expression", lens/style "art style"
-- **Added**: full NSFW coverage — 38 adult action/state phrases fully merged into "seductive / NSFW" and "nude / NSFW"
-- **Adjusted**: removed the 13MB full-library search, back to lightweight (~50KB), semantic content with cleaner categories
+```bash
+# set a key (or use the opencode default auth file — the proxy reads it automatically)
+set OPENCODE_API_KEY=sk-...
+# start the proxy (default port 7898)
+python opencode_proxy.py
+```
 
-### v1.2.0
-- **Added**: full tag library — 321,450 Danbooru Chinese–English tags embedded; search any tag in the top search box and add it to the end of the prompt (file grows to ~14MB, same class as the supermarket)
+Then in "custom": Base URL `http://127.0.0.1:7898/v1`, model `deepseek-v4-flash`, any key.
 
-### v1.1.0
-- **Added**: subcategories — each slot filters by subcategory (e.g. clothing → dresses / tops / outerwear / nude…)
-- **Added**: negative-words slot (⑨) — click to add to the negative box, with sensible pre-selected anti-artifact defaults
-- **Added**: NSFW support — "nude / NSFW" under clothing, "seductive / NSFW" under action
-- **Added**: phrase library expanded to ~500 (sharpness / texture / professions / poses and more)
+> Reasoning models (Qwen3-4B / deepseek-v4-flash, etc.) "think" first — the page disables thinking and raises the token budget automatically.
 
-### v1.0.1
-- **Optimized**: dark mode by default (still toggleable to light with 🌓)
-- **Optimized**: README adds a "Related tool" link (to the AI Drawing Prompt Supermarket)
+## Negative prompt
 
-### v1.0.0
-- **Added**: first release — 8-slot natural-language prompt assembly + weights / shuffle / favorites / presets / dark mode / 3-tier copy fallback
+- **Local models** (heavy load): auto-fill a universal default negative (`easynegative, bad-hands, ...`)
+- **Online models**: generate a matching negative in real time from the positive prompt
 
-## Notes
+## Deploy to GitHub Pages
 
-- Single-file HTML, all data inlined, works offline, ~30KB
-- The phrase library covers adult-content categories; please comply with local laws and platform policies, and do not generate content involving minors
+Put `index.html` in the repo root (Pages serves it as the home page). Notes:
+
+- **Online sources on Pages**: OpenAI / DeepSeek work directly (CORS headers present)
+- **opencode on Pages**: due to CORS and browser private-network restrictions, **download and run locally** (`index.html` + `opencode_proxy.py`) instead of calling opencode from the hosted page
+
+## License
+
+MIT
