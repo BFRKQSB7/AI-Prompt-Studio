@@ -55,7 +55,7 @@ input[type=range]{width:100%;accent-color:var(--acc)}
 .hint b{color:var(--acc);font-weight:700}
 .hint code{background:var(--panel2);padding:1px 5px;border-radius:4px}
 .lib-status{font-size:12px;color:var(--dim);margin-top:8px}
-.tag-caps{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.tag-caps{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;padding:4px 0}
 .tcap{position:relative;display:inline-flex;flex-direction:column;align-items:center;padding:4px 10px;border:1px solid var(--border);border-radius:8px;background:var(--panel2);font-size:12px;cursor:pointer;user-select:none}
 .tcap:hover{border-color:var(--acc)}
 .tcap-en{color:var(--text);line-height:1.3}
@@ -220,16 +220,16 @@ footer{margin-top:26px;font-size:12px;color:var(--dim);text-align:center}
     <div id="sdxlOut">
       <label for="out">生成的提示词（复制使用）</label>
       <textarea id="out" readonly placeholder="转换结果会显示在这里…"></textarea>
+      <div class="tag-caps" id="tagCaps"></div>
       <div class="btns">
         <button class="btn ghost" id="copyBtn">📋 复制</button>
       </div>
-      <div class="tag-caps" id="tagCaps"></div>
       <label for="neg" style="margin-top:16px">负面提示词（Negative Prompt，复制使用）</label>
       <textarea id="neg" readonly placeholder="负面提示词：本地模型自动填通用默认；在线模型实时生成…"></textarea>
+      <div class="tag-caps" id="negCaps"></div>
       <div class="btns">
         <button class="btn ghost" id="copyNegBtn">📋 复制负面</button>
       </div>
-      <div class="tag-caps" id="negCaps"></div>
       <div class="hint">
         本地 llama：需先在本机启动一个 OpenAI 兼容的 llama-server（地址在上方 Base URL 中配置）。<b>上下文建议</b>：SDXL 生图 ≥8192，H3 视频 ≥8192（负面提示词也由模型生成，需预留输出空间）；全量库 16.7万条仅在浏览器内存检索（首次约 7.6MB 下载），每轮只发 ≤80 条命中，<b>不占模型上下文</b>。OpenAI/DeepSeek：填 API Key 即可直连（本地存储）。
       </div>
