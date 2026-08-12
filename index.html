@@ -555,26 +555,44 @@ function loadFullLib(){
   });
   return fullPromise;
 }
+let FULL_KEYS_BY2=null;
+function buildKeysBy2(){
+  if(FULL_KEYS_BY2||!fullMap) return;
+  FULL_KEYS_BY2=new Map();
+  for(const k of fullMap.keys()){
+    if(k.length<2) continue;
+    const c2=k.slice(0,2);
+    let a=FULL_KEYS_BY2.get(c2); if(!a){ a=[]; FULL_KEYS_BY2.set(c2,a); }
+    a.push(k);
+  }
+}
 function retrieveTags(input,map,cap=80){
-  const out=new Map(); // en -> zh(首个来源)
+  const out=new Map(); // en -> zh(匹配到的 key)
+  const add=(zh,ens)=>{ for(const en of ens){ if(!out.has(en)&&out.size<cap) out.set(en,zh); } };
   const cjkRuns=(input.match(/[一-鿿]+/g)||[]);
-  outer:
+  buildKeysBy2();
   for(const run of cjkRuns){
-    for(let i=0;i<run.length&&out.size<cap;i++){
-      let matchedLen=0;
-      for(let l=run.length-i;l>=1;l--){
-        const k=run.substr(i,l);
-        if(map.has(k)){
-          const ens=map.get(k);
-          for(let t=0;t<ens.length&&out.size<cap;t++){
-            if(!out.has(ens[t])) out.set(ens[t],k);
-          }
-          matchedLen=l; break;
+    for(let i=0;i<run.length-1&&out.size<cap;i++){
+      const bucket=FULL_KEYS_BY2?FULL_KEYS_BY2.get(run.substr(i,2)):undefined;
+      if(!bucket) continue;
+      const exact=[], expanded=[];
+      for(const k of bucket){
+        let cp=0; const lim=Math.min(k.length, run.length-i);
+        for(let t=0;t<lim;t++){ if(k.charCodeAt(t)===run.charCodeAt(i+t)) cp++; else break; }
+        if(cp>=2){
+          (k.length<=run.length-i&&k===run.substr(i,k.length)?exact:expanded).push({k,cp});
         }
       }
-      i += matchedLen>0?matchedLen-1:0;
+      if(!exact.length&&!expanded.length) continue;
+      // 先加精确 key（巨大→jumbo/乳房→breasts），再加前缀展开的角色变体（阿米娅 (明日方舟)→amiya）
+      for(const m of exact.slice(0,2)) add(m.k, map.get(m.k));
+      expanded.sort((a,b)=>b.cp-a.cp||b.k.length-a.k.length);
+      for(const m of expanded.slice(0,2)) add(m.k, map.get(m.k));
+      let adv=0;
+      for(const m of exact) adv=Math.max(adv,m.cp);
+      for(const m of expanded) adv=Math.max(adv,m.cp);
+      i+=adv-1;
     }
-    if(out.size>=cap) break outer;
   }
   return Array.from(out.entries()).slice(0,cap).map(([en,zh])=>[zh,en]);
 }
