@@ -1,6 +1,6 @@
 # AI 提示词工坊（AI Prompt Studio）
 
-![](https://img.shields.io/badge/version-v1.2.0-blue)
+![](https://img.shields.io/badge/version-v1.3.0-blue)
 
 **中文简体** | [**English**](./docs/en/README.md)
 
@@ -73,7 +73,7 @@ python opencode_proxy.py
 
 ## 在线使用
 
-本项目已托管到 GitHub Pages：**https://bfrkqsb7.github.io/sd-prompt-converter/**
+本项目已托管到 GitHub Pages：**https://bfrkqsb7.github.io/AI-Prompt-Studio/**
 
 - **OpenAI / DeepSeek**：在线版可直接用（官方 API 带 CORS 头）
 - **本地 llama / opencode / 全量库**：在线版无法直连（CORS / 浏览器私有网络限制）——下载 `index.html` + `prompt-db.js`（+ `opencode_proxy.py`）本地打开，功能完整

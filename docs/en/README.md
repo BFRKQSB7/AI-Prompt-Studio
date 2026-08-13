@@ -2,7 +2,7 @@
 
 [**中文**](../README.md) | **English**
 
-![](https://img.shields.io/badge/version-v1.2.0-blue)
+![](https://img.shields.io/badge/version-v1.3.0-blue)
 
 Converts Chinese prompts (free-form scene descriptions, NSFW welcome) into English prompts. Single-file, zero dependencies, runs in the browser:
 
@@ -73,7 +73,7 @@ Then in "custom": Base URL `http://127.0.0.1:7898/v1`, model `deepseek-v4-flash`
 
 ## Online use
 
-This project is hosted on GitHub Pages: **https://bfrkqsb7.github.io/sd-prompt-converter/**
+This project is hosted on GitHub Pages: **https://bfrkqsb7.github.io/AI-Prompt-Studio/**
 
 - **OpenAI / DeepSeek**: work directly on the hosted page (official APIs send CORS headers)
 - **Local llama / opencode / full library**: cannot be reached from the hosted page (CORS / browser private-network restrictions) — download `index.html` + `prompt-db.js` (+ `opencode_proxy.py`) and open locally for full functionality
