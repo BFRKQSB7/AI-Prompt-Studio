@@ -364,7 +364,7 @@ const DICT={
   '看向镜头':'looking at viewer','勾人':'seductive',
   '内衣':'lingerie','蕾丝':'lace','黑丝':'black stockings','吊带袜':'thighhighs','丁字裤':'thong',
   '胸罩':'bra','撩起裙子':'skirt lifted','不穿内裤':'no panties','光脚':'barefoot',
-  '真实照片':'RAW photo','电影感':'cinematic','胶片颗粒':'film grain','柔光':'soft light','窗边光':'window light',
+  '真实照片':'RAW photo','电影感':'cinematic','胶片颗粒':'film grain','柔光':'soft light','暖光':'warm lighting','窗边光':'window light',
   '黄金时刻':'golden hour','影棚光':'studio lighting','侧光':'rim lighting','浅景深':'shallow depth of field',
   '85mm':'85mm f/1.4','50mm':'50mm f/1.8','胶片模拟':'Kodak Portra 400','锐利对焦':'sharp focus',
   '高分辨率':'8k','皮肤细节':'detailed skin texture','专业摄影':'professional photography','杂志风':'magazine quality',
@@ -431,8 +431,15 @@ const NEG_FILTER=/\b(censorship|censored|inappropriate content|explicit content|
 function sanitizeNeg(t){
   return t.replace(NEG_FILTER,'').replace(/,{2,}/g,',').replace(/,\s*$/,'').replace(/^\s*,/,'').replace(/\s{2,}/g,' ').trim();
 }
-/* ============ SDXL 正向标签后筛选：过全量库，剔除不在库的词条 ============ */
+/* ============ SDXL 正向标签后筛选：过全量库剔除自造词（仅全量库参考模式）；词典词/质量词/库内词一律保留 ============ */
 const KEEP_QUALITY=new Set(['masterpiece','best quality','amazing quality','newest','safe','absurdres','highres','very detailed','detailed face','detailed background','score_9','score_8','score_7','score_6','score_5','score_4','8k','4k','ultra detailed','highly detailed','ultra-detailed','highly-detailed','best quality','detailed illustration','hires','monochrome']);
+const DICT_TERMS=new Set(), CHAR_TAG_ENS=new Set();
+function buildKeepTerms(){
+  // 词典值 + 角色消歧标签归一化为 下划线小写：系统提示词强制模型用这些词，筛选绝不能删
+  if(DICT_TERMS.size) return;
+  for(const v of Object.values(DICT)) DICT_TERMS.add(v.toLowerCase().replace(/ /g,'_'));
+  for(const t of CHAR_TAGS) CHAR_TAG_ENS.add(t.en.toLowerCase().replace(/ /g,'_'));
+}
 let FULL_EN_SET=null;
 function buildFullEnSet(){
   if(FULL_EN_SET||!FULL_LIB) return;
@@ -441,11 +448,13 @@ function buildFullEnSet(){
 }
 function sanitizeTags(text){
   if(!text||!FULL_LIB) return text;
-  buildFullEnSet();
+  buildFullEnSet(); buildKeepTerms();
   return text.split(',').map(t=>{
     const raw=t.trim(); if(!raw) return '';
-    if(FULL_EN_SET.has(raw.toLowerCase().replace(/ /g,'_'))) return raw;
+    const norm=raw.toLowerCase().replace(/ /g,'_');
+    if(FULL_EN_SET.has(norm)) return raw;
     if(KEEP_QUALITY.has(raw.toLowerCase())) return raw;
+    if(DICT_TERMS.has(norm)||CHAR_TAG_ENS.has(norm)) return raw;
     return '';
   }).filter(Boolean).join(', ');
 }
@@ -962,7 +971,7 @@ async function doSdxl(base,model,key,req){
     ],0.2,(+$('maxTok').value||2048),limit);
     out.value=pos.text.trim().replace(/,\s*$/,'');
     if(!out.value) throw new Error('空响应');
-    if(mode==='tag'&&FULL_LIB) out.value=sanitizeTags(out.value);
+    if(mode==='tag'&&libMode==='full'&&FULL_LIB) out.value=sanitizeTags(out.value);
     if(mode==='tag') renderTagCaps(out.value,'out'); else { $('tagCaps').innerHTML=''; $('negCaps').innerHTML=''; }
     const neg=$('neg');
     if($('negGenChk').checked){
