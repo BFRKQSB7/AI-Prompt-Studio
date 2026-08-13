@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI 提示词工坊 v1.3.0 — 中文需求 → SDXL 直白提示词 / MiniMax H3 视频提示词</title>
+<title>AI 提示词工坊 v1.4.0 — 中文需求 → SDXL 直白提示词 / MiniMax H3 视频提示词</title>
 <style>
 :root{--bg:#0f1115;--panel:#171a21;--panel2:#1d2129;--border:#2a2f3a;--text:#e6e8ee;--dim:#9aa2b1;--acc:#4f8cff;--ok:#3ecf8e;--bad:#ff6b6b}
 [data-theme="light"]{--bg:#f5f6f8;--panel:#ffffff;--panel2:#f0f1f4;--border:#dfe2e8;--text:#1c1f26;--dim:#6a7280;--acc:#2f6fe4;--ok:#1aa873;--bad:#d64545}
@@ -85,7 +85,7 @@ footer{margin-top:26px;font-size:12px;color:var(--dim);text-align:center}
 <body>
 <div class="wrap">
   <header>
-    <h1>AI 提示词工坊 <span class="ver">v1.3.0</span></h1>
+    <h1>AI 提示词工坊 <span class="ver">v1.4.0</span></h1>
     <span id="status" class="status"><span class="dot"></span>检测本地后端…</span>
     <span class="spacer"></span>
     <button class="theme-btn" id="themeBtn">🌓 切换浅色</button>
@@ -162,6 +162,20 @@ footer{margin-top:26px;font-size:12px;color:var(--dim);text-align:center}
           </div>
           <div class="lib-status" id="libStatus">精选库：内嵌 347 条常用标签；全量库 31.7万条（约 11.5MB，首次联网加载，仅在浏览器内存检索，不占模型上下文）</div>
         </div>
+        <div class="seg" style="flex:0 0 auto">
+          <label for="tagLimit">标签个数上限</label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="number" id="tagLimit" min="1" max="100" value="20" style="width:72px">
+            <span style="color:var(--dim);font-size:12px;max-width:150px">超出即强制停止（正负面分开算）</span>
+          </div>
+        </div>
+        <div class="seg" style="flex:0 0 auto">
+          <label for="maxTok">最大输出 token</label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="number" id="maxTok" min="64" max="8192" value="2048" style="width:84px">
+            <span style="color:var(--dim);font-size:12px;max-width:150px">SDXL / H3 生成上限</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -208,6 +222,9 @@ footer{margin-top:26px;font-size:12px;color:var(--dim);text-align:center}
             <option value="14">14 秒</option>
             <option value="15" selected>15 秒</option>
           </select>
+          <label for="h3MaxTok" style="margin-top:12px">最大输出 token</label>
+          <input type="number" id="h3MaxTok" min="64" max="16384" value="2048" style="width:100%">
+          <span style="color:var(--dim);font-size:12px">H3 结构化输出上限，独立于 SDXL</span>
         </div>
       </div>
       <label for="h3Refs" id="h3RefsLab" style="margin-top:14px">参考图片文字描述（可选，用文字说明每张图的用途，无需上传图片）</label>
@@ -223,15 +240,17 @@ footer{margin-top:26px;font-size:12px;color:var(--dim);text-align:center}
       <div class="tag-caps" id="tagCaps"></div>
       <div class="btns">
         <button class="btn ghost" id="copyBtn">📋 复制</button>
+        <button class="btn ghost" id="clearBtn">🗑 清空</button>
       </div>
-      <label for="neg" style="margin-top:16px">负面提示词（Negative Prompt，复制使用）</label>
-      <textarea id="neg" readonly placeholder="负面提示词：本地模型自动填通用默认；在线模型实时生成…"></textarea>
+      <label for="neg" style="margin-top:16px;display:flex;align-items:center;gap:6px"><input type="checkbox" id="negGenChk" checked> 负面提示词（Negative Prompt，复制使用）</label>
+      <textarea id="neg" readonly placeholder="负面提示词：勾选上方选框=由模型实时生成；不勾选=自动填通用默认"></textarea>
       <div class="tag-caps" id="negCaps"></div>
       <div class="btns">
         <button class="btn ghost" id="copyNegBtn">📋 复制负面</button>
+        <button class="btn ghost" id="clearNegBtn">🗑 清空</button>
       </div>
       <div class="hint">
-        本地 llama：需先在本机启动一个 OpenAI 兼容的 llama-server（地址在上方 Base URL 中配置）。<b>上下文建议</b>：SDXL 生图 ≥8192，H3 视频 ≥8192（负面提示词也由模型生成，需预留输出空间）；全量库 31.7万条仅在浏览器内存检索（首次约 11.5MB 下载），每轮只发 ≤80 条命中，<b>不占模型上下文</b>。OpenAI/DeepSeek：填 API Key 即可直连（本地存储）。
+        本地 llama：需先在本机启动一个 OpenAI 兼容的 llama-server（地址在上方 Base URL 中配置）。<b>上下文建议</b>：SDXL 生图 ≥8192，H3 视频 ≥8192（负面提示词也由模型生成，需预留输出空间）；全量库 31.7万条仅在浏览器内存检索（首次约 11.5MB 下载），每轮只发 ≤40 条命中，<b>不占模型上下文</b>。OpenAI/DeepSeek：填 API Key 即可直连（本地存储）。
       </div>
     </div>
     <div id="h3Out" style="display:none">
@@ -239,11 +258,12 @@ footer{margin-top:26px;font-size:12px;color:var(--dim);text-align:center}
       <textarea id="out3" readonly placeholder="H3 视频提示词会显示在这里…"></textarea>
       <div class="btns">
         <button class="btn ghost" id="copy3Btn">📋 复制</button>
+        <button class="btn ghost" id="clear3Btn">🗑 清空</button>
       </div>
     </div>
   </div>
 
-  <footer>直白词典内置 · 提示词库参考(精选/31.7万) · SDXL 生图 + H3 视频 · v1.3.0</footer>
+  <footer>直白词典内置 · 提示词库参考(精选/31.7万) · SDXL 生图 + H3 视频 · v1.4.0</footer>
 </div>
 
 <script>
@@ -255,7 +275,7 @@ const PROVIDERS={
   deepseek:{base:'https://api.deepseek.com/v1',model:'deepseek-chat'},
   custom:{base:'',model:''}
 };
-let cfg=JSON.parse(localStorage.getItem(LS)||'null')||{provider:'local',base:'',model:'',key:'',lib:'cur'};
+let cfg=JSON.parse(localStorage.getItem(LS)||'null')||{provider:'local',base:'',model:'',key:'',lib:'cur',negGen:true,tagLimit:20,maxTok:2048,h3MaxTok:2048};
 
 function ensureModelOption(v){
   const sel=$('modelName');
@@ -272,10 +292,14 @@ function applyCfg(){
   $('apiKey').value=cfg.key||'';
   if(cfg.lib&&['off','cur','full'].includes(cfg.lib)){ libMode=cfg.lib; }
   syncLibUI();
+  $('negGenChk').checked=cfg.negGen!==false;
+  $('tagLimit').value=cfg.tagLimit||20;
+  $('maxTok').value=cfg.maxTok||2048;
+  $('h3MaxTok').value=cfg.h3MaxTok||2048;
   if(cfg.provider==='local') loadModels();
 }
 function saveCfg(){
-  cfg={provider:$('provider').value,base:$('baseUrl').value.trim(),model:$('modelName').value.trim(),key:$('apiKey').value.trim(),lib:libMode};
+  cfg={provider:$('provider').value,base:$('baseUrl').value.trim(),model:$('modelName').value.trim(),key:$('apiKey').value.trim(),lib:libMode,negGen:$('negGenChk').checked,tagLimit:Math.max(1,Math.min(100,+$('tagLimit').value||20)),maxTok:Math.max(64,Math.min(8192,+$('maxTok').value||2048)),h3MaxTok:Math.max(64,Math.min(16384,+$('h3MaxTok').value||2048))};
   localStorage.setItem(LS,JSON.stringify(cfg));
 }
 async function loadModels(){
@@ -456,6 +480,8 @@ function renderTagCaps(text, outId){
   const box=$(outId==='neg'?'negCaps':'tagCaps');
   box.innerHTML='';
   if(!text) return;
+  // 中文胶囊优先用全量库：库没加载就后台拉取，加载完重渲染（选精选/关时也照样用全量翻译）
+  if(!FULL_LIB) loadFullLib().then(()=>{ if($(outId).value===text) renderTagCaps(text,outId); });
   buildEnZh();
   const segs=splitTopLevel(text);
   box.innerHTML=segs.map((seg,i)=>{
@@ -555,8 +581,19 @@ function loadFullLib(){
   });
   return fullPromise;
 }
-let FULL_KEYS_BY2=null;
-function buildKeysBy2(){
+let FULL_KEYS_BY2=null, CUR_KEYS_BY2=null;
+function buildKeysBy2(map){
+  if(map===LIB_CUR){   // 精选库用精选库自己的前缀索引（库小，全部建）
+    if(CUR_KEYS_BY2) return;
+    CUR_KEYS_BY2=new Map();
+    for(const k of LIB_CUR.keys()){
+      if(k.length<2) continue;
+      const c2=k.slice(0,2);
+      let a=CUR_KEYS_BY2.get(c2); if(!a){ a=[]; CUR_KEYS_BY2.set(c2,a); }
+      a.push(k);
+    }
+    return;
+  }
   if(FULL_KEYS_BY2||!fullMap) return;
   FULL_KEYS_BY2=new Map();
   for(const k of fullMap.keys()){
@@ -566,41 +603,78 @@ function buildKeysBy2(){
     a.push(k);
   }
 }
-function retrieveTags(input,map,cap=80){
-  const out=new Map(); // en -> zh(匹配到的 key)
-  const add=(zh,ens)=>{ for(const en of ens){ if(!out.has(en)&&out.size<cap) out.set(en,zh); } };
+/* 版权/知名角色消歧：这类角色常不带 (系列) 后缀（如 艾莉丝·格雷拉特→eris_greyrat），纯检索在同名角色里分不出。
+   输入包含 key → 把 en 标签置顶注入参考块。新增照抄格式。 */
+const CHAR_TAGS=[
+  {key:'无职转生艾莉丝', en:'eris_greyrat'},
+];
+function disambigScore(zh,en,input){
+  // 角色 (系列) 消歧后缀命中输入→加权：如 希露菲叶特 (无职转生) 对输入"无职转生希露菲"
+  let s=0;
+  for(const m of zh.matchAll(/[（(]([^（()）]*)[)）]/g)) if(m[1]&&input.includes(m[1])) s++;
+  for(const m of en.matchAll(/\(([^()]*)\)/g)) if(m[1]&&input.includes(m[1])) s++;
+  return s;
+}
+function retrieveTags(input, includeFull, cap){
+  // 检索：精确子串命中优先（长键更具体），curated 词条排前、full 库补足；前缀扩展每位置取 8 条
+  // 结构=2 字分桶（内存轻，实测字符级 Trie 1.7M 节点 ~166MB 不可行），匹配语义=Trie 最长匹配
+  cap=cap||40;
+  const out=new Map(); // en -> zh
+  const hits=[];       // {zh, ens, rank, len}
+  const cleanInput=input.replace(/[\s·、，,。；的]/g,'');
+  for(const t of CHAR_TAGS){
+    if(cleanInput.includes(t.key)) hits.push({zh:t.key, ens:[t.en], rank:-1, len:t.key.length});
+  }
   const cjkRuns=(input.match(/[一-鿿]+/g)||[]);
-  buildKeysBy2();
+  buildKeysBy2(LIB_CUR);
+  if(includeFull&&fullMap) buildKeysBy2(fullMap);
+  const sources=[{buckets:CUR_KEYS_BY2,map:LIB_CUR,cur:true}];
+  if(includeFull&&fullMap) sources.push({buckets:FULL_KEYS_BY2,map:fullMap,cur:false});
   for(const run of cjkRuns){
-    for(let i=0;i<run.length-1&&out.size<cap;i++){
-      const bucket=FULL_KEYS_BY2?FULL_KEYS_BY2.get(run.substr(i,2)):undefined;
-      if(!bucket) continue;
-      const exact=[], expanded=[];
-      for(const k of bucket){
-        let cp=0; const lim=Math.min(k.length, run.length-i);
-        for(let t=0;t<lim;t++){ if(k.charCodeAt(t)===run.charCodeAt(i+t)) cp++; else break; }
-        if(cp>=2){
-          (k.length<=run.length-i&&k===run.substr(i,k.length)?exact:expanded).push({k,cp});
+    for(let i=0;i<run.length;){
+      const c2=run.substr(i,2);
+      const exact=[], exp=[];   // exact:{zh,ens,rank,len}  exp:{zh,ens,rank,cp}
+      for(const {buckets,map,cur} of sources){
+        const bucket=buckets.get(c2);
+        if(!bucket) continue;
+        for(const k of bucket){
+          const lim=Math.min(k.length, run.length-i);
+          let cp=0;
+          while(cp<lim&&k.charCodeAt(cp)===run.charCodeAt(i+cp)) cp++;
+          if(cp<2) continue;
+          const ens=map.get(k);
+          if(!ens) continue;
+          if(cp>=k.length&&k===run.substr(i,k.length)){
+            exact.push({zh:k,ens,rank:cur?0:1,len:k.length});   // 精确子串
+          }else{
+            exp.push({zh:k,ens,rank:cur?2:3,cp});               // 前缀扩展（键比输入段更长）
+          }
         }
       }
-      if(!exact.length&&!expanded.length) continue;
-      // 先加精确 key（巨大→jumbo/乳房→breasts），再加前缀展开的角色变体（阿米娅 (明日方舟)→amiya）
-      for(const m of exact.slice(0,2)) add(m.k, map.get(m.k));
-      expanded.sort((a,b)=>b.cp-a.cp||b.k.length-a.k.length);
-      for(const m of expanded.slice(0,2)) add(m.k, map.get(m.k));
-      let adv=0;
-      for(const m of exact) adv=Math.max(adv,m.cp);
-      for(const m of expanded) adv=Math.max(adv,m.cp);
-      i+=adv-1;
+      exact.sort((a,b)=>a.rank-b.rank||b.len-a.len);   // curated 精确优先，长键优先
+      for(const e of exact) hits.push(e);
+      // 扩展：同系列消歧优先（(无职转生) 等后缀命中输入→置顶），其余命中输入字符越多越优先、短键优先，多取几个给模型按上下文选
+      for(const e of exp) e.dsb=disambigScore(e.zh,e.ens[0],input);
+      exp.sort((a,b)=>b.dsb-a.dsb||a.rank-b.rank||b.cp-a.cp||a.zh.length-b.zh.length);
+      for(const e of exp.slice(0,8)) hits.push(e);
+      let maxAdv=0;
+      for(const e of exact) maxAdv=Math.max(maxAdv,e.len);
+      for(const e of exp) maxAdv=Math.max(maxAdv,e.cp);
+      i+=Math.max(1,maxAdv);   // 按最深的命中跳步，避免在命中内部再扫出噪声（如 艾莉丝→莉丝）
     }
+  }
+  hits.sort((a,b)=>a.rank-b.rank||b.len-a.len);
+  for(const h of hits){
+    for(const en of h.ens){
+      if(!out.has(en)&&out.size<cap) out.set(en,h.zh);
+    }
+    if(out.size>=cap) break;
   }
   return Array.from(out.entries()).slice(0,cap).map(([en,zh])=>[zh,en]);
 }
 function buildReferenceBlock(req,lib){
   if(lib==='off') return '';
-  let map=LIB_CUR;
-  if(lib==='full'&&fullMap) map=fullMap;
-  const hits=retrieveTags(req,map,80);
+  const hits=retrieveTags(req, lib==='full', 40);
   if(!hits.length) return '';
   const lines=hits.map(([zh,en])=>zh+'→'+en).join(', ');
   return '\n参考标签库（命中你的描述，用其中准确的英文词表达，而非随意自造）：\n'+lines;
@@ -826,8 +900,54 @@ $('goBtn').addEventListener('click',async()=>{
   await doSdxl(base,model,key,req);
 });
 
+async function streamChat(base,model,key,messages,temperature,maxTokens,tagLimit){
+  // 流式生成：按逗号数（括号内不算）实时数标签，超过 tagLimit 立即中止，强制停止输出
+  const headers={'Content-Type':'application/json'};
+  if(key) headers['Authorization']='Bearer '+key;
+  const ctrl=new AbortController();
+  const res=await fetch(base+'/chat/completions',{method:'POST',headers,signal:ctrl.signal,
+    body:JSON.stringify({model,messages,temperature,max_tokens:maxTokens,stream:true,chat_template_kwargs:{enable_thinking:false}})});
+  if(!res.ok){ const t=await res.text(); throw new Error('HTTP '+res.status+' '+(t.slice(0,200))); }
+  const reader=res.body.getReader();
+  const dec=new TextDecoder();
+  let text='', depth=0, commas=0, stopped=false, buf='';
+  const lim=tagLimit>0?tagLimit:Infinity;
+  while(true){
+    let chunk;
+    try{ chunk=await reader.read(); }catch(e){ break; }
+    if(chunk.done) break;
+    buf+=dec.decode(chunk.value,{stream:true});
+    let nl;
+    while((nl=buf.indexOf('\n'))>=0){
+      const line=buf.slice(0,nl).trim(); buf=buf.slice(nl+1);
+      if(!line.startsWith('data:')) continue;
+      const d=line.slice(5).trim();
+      if(d==='[DONE]') return {text,stopped};
+      let j; try{ j=JSON.parse(d); }catch(e){ continue; }
+      const delta=(j.choices&&j.choices[0]&&j.choices[0].delta&&j.choices[0].delta.content)||'';
+      if(!delta) continue;
+      for(const ch of delta){
+        text+=ch;
+        if(ch==='(') depth++;
+        else if(ch===')') depth=Math.max(0,depth-1);
+        else if(ch===','&&depth===0){
+          commas++;
+          if(commas>=lim){   // 到上限：去掉刚追加的分隔逗号，精确停在第 lim 个标签
+            stopped=true;
+            text=text.replace(/,\s*$/,'');
+            break;
+          }
+        }
+      }
+      if(stopped){ try{ctrl.abort();}catch(e){} return {text,stopped}; }
+    }
+  }
+  return {text,stopped};
+}
+
 async function doSdxl(base,model,key,req){
   const out=$('out'); const err=$('err'); out.value='转换中…';
+  const limit=Math.max(1,Math.min(100,+$('tagLimit').value||20));
   let lib=libMode;
   let refBlock='';
   if(lib==='full'&&!FULL_LIB){
@@ -835,34 +955,30 @@ async function doSdxl(base,model,key,req){
     if(!ok) lib='cur';
   }
   if(lib!=='off') refBlock=buildReferenceBlock(req,lib);
-  const headers={'Content-Type':'application/json'};
-  if(key) headers['Authorization']='Bearer '+key;
   try{
-    const res=await fetch(base+'/chat/completions',{method:'POST',headers,signal:AbortSignal.timeout(180000),
-      body:JSON.stringify({model,messages:[
-        {role:'system',content:buildSystemPrompt(mode,+$('nsfw').value,refBlock)},
-        {role:'user',content:req}
-      ],temperature:0.2,max_tokens:3072,chat_template_kwargs:{enable_thinking:false}})});
-    if(!res.ok){ const t=await res.text(); throw new Error('HTTP '+res.status+' '+(t.slice(0,200))); }
-    const d=await res.json();
-    out.value=(d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content||'').trim();
+    const pos=await streamChat(base,model,key,[
+      {role:'system',content:buildSystemPrompt(mode,+$('nsfw').value,refBlock)},
+      {role:'user',content:req}
+    ],0.2,(+$('maxTok').value||2048),limit);
+    out.value=pos.text.trim().replace(/,\s*$/,'');
     if(!out.value) throw new Error('空响应');
     if(mode==='tag'&&FULL_LIB) out.value=sanitizeTags(out.value);
     if(mode==='tag') renderTagCaps(out.value,'out'); else { $('tagCaps').innerHTML=''; $('negCaps').innerHTML=''; }
     const neg=$('neg');
-    neg.value='生成中…';
-    try{
-        const r2=await fetch(base+'/chat/completions',{method:'POST',headers,signal:AbortSignal.timeout(180000),
-          body:JSON.stringify({model,messages:[
-            {role:'system',content:buildNegSystemPrompt(mode)},
-            {role:'user',content:'正向提示词：'+out.value}
-          ],temperature:0.2,max_tokens:3072,chat_template_kwargs:{enable_thinking:false}})});
-        if(r2.ok){
-          const d2=await r2.json();
-          const nv=(d2.choices&&d2.choices[0]&&d2.choices[0].message&&d2.choices[0].message.content||'').trim();
-          neg.value=sanitizeNeg(nv)||(mode==='tag'?DEFAULT_NEG_TAG:DEFAULT_NEG_NL);
-        }else{ neg.value=mode==='tag'?DEFAULT_NEG_TAG:DEFAULT_NEG_NL; }
+    if($('negGenChk').checked){
+      neg.value='生成中…';
+      let nv='';
+      try{
+        const r2=await streamChat(base,model,key,[
+          {role:'system',content:buildNegSystemPrompt(mode)},
+          {role:'user',content:'正向提示词：'+out.value}
+        ],0.2,(+$('maxTok').value||2048),limit);
+        nv=r2.text.trim();
+        neg.value=sanitizeNeg(nv)||(mode==='tag'?DEFAULT_NEG_TAG:DEFAULT_NEG_NL);
       }catch(e2){ neg.value=mode==='tag'?DEFAULT_NEG_TAG:DEFAULT_NEG_NL; }
+    }else{
+      neg.value=mode==='tag'?DEFAULT_NEG_TAG:DEFAULT_NEG_NL;
+    }
     renderTagCaps(neg.value,'neg');
   }catch(e){
     err.textContent='转换失败：'+e.message+'（本地源需先启动 llama-server；在线源检查 Key/网络）';
@@ -882,7 +998,7 @@ async function doH3(base,model,key,req){
       body:JSON.stringify({model,messages:[
         {role:'system',content:buildH3SystemPrompt(h3Mode,$('h3Dur').value,h3Gen,hasRefs)},
         {role:'user',content:userMsg}
-      ],temperature:0.3,max_tokens:4096,chat_template_kwargs:{enable_thinking:false}})});
+      ],temperature:0.3,max_tokens:(+$('h3MaxTok').value||2048),chat_template_kwargs:{enable_thinking:false}})});
     if(!res.ok){ const t=await res.text(); throw new Error('HTTP '+res.status+' '+(t.slice(0,200))); }
     const d=await res.json();
     out.value=postProcessH3((d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content||'').trim(),$('h3Dur').value);
@@ -904,6 +1020,12 @@ function bindCopy(btn,ta,label){
 bindCopy('copyBtn','out','📋 复制');
 bindCopy('copyNegBtn','neg','📋 复制负面');
 bindCopy('copy3Btn','out3','📋 复制');
+function bindClear(btn,ta,capsId){
+  $(btn).addEventListener('click',()=>{ $(ta).value=''; if(capsId) $(capsId).innerHTML=''; });
+}
+bindClear('clearBtn','out','tagCaps');
+bindClear('clearNegBtn','neg','negCaps');
+bindClear('clear3Btn','out3',null);
 
 $('exBtn').addEventListener('click',()=>{
   $('req').value='一个年轻女人躺在床上，裸体，张开双腿，露出湿润的小穴，看着镜头，眼神勾人，室内暖光，电影感';

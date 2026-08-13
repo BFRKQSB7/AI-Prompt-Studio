@@ -2,7 +2,7 @@
 
 [**中文**](../README.md) | **English**
 
-![](https://img.shields.io/badge/version-v1.3.0-blue)
+![](https://img.shields.io/badge/version-v1.4.0-blue)
 
 Converts Chinese prompts (free-form scene descriptions, NSFW welcome) into English prompts. Single-file, zero dependencies, runs in the browser:
 
@@ -13,10 +13,12 @@ Converts Chinese prompts (free-form scene descriptions, NSFW welcome) into Engli
 
 - **Tag flow** (NoobAI / Pony / Manhwa): Danbooru tags + `masterpiece, best quality, newest, absurdres` quality prefix
 - **Natural-language flow** (RealVis / Juggernaut): `RAW photo`-led natural-language prompt + camera/lens/lighting words
-- **Prompt-library reference**: curated library (347 embedded common tags, default) / full library (167k tags, lazy-loads `prompt-db.js`, searched in browser memory only — does NOT consume model context)
-- **Auto negative prompt**: both local and online models generate a matching negative in real time; falls back to a universal default on failure
+- **Prompt-library reference**: curated library (347 embedded common tags, default) / full library (317k tags, lazy-loads `prompt-db.js`, searched in browser memory only — does NOT consume model context)
+- **Auto negative prompt**: both local and online models generate a matching negative in real time (can be disabled — then the universal default is used); falls back to a universal default on failure
 - **H3 video prompts**: generation mode (T2VA text / I2VA first-frame / FL2VA first+last / L2VA last-frame / Ref2VA references) × content style (drama / action / 9-grid), outputs the official structured format (3 fields for base modes, 6 sections for Ref2VA), with built-in H3 NSFW field experience (age + face features, Asian facial features, capped soundscape, explicit out-of-frame exits, etc.)
 - **NSFW directness slider** (conservative / standard / direct / very direct)
+- **Tag count limit**: configurable (default 20); output is truncated once the limit is exceeded (positive/negative counted separately)
+- **max_tokens configurable**: SDXL and H3 set independently (default 2048)
 - **Built-in explicit dictionary** as knowledge base — matched words use standard English, no euphemisms
 - **Multiple backends**: local llama / OpenAI / DeepSeek / custom (OpenAI-compatible); online sources show official sites + risk disclaimer
 - **Responsive**: auto-scales on phone / desktop
@@ -39,7 +41,7 @@ Converts Chinese prompts (free-form scene descriptions, NSFW welcome) into Engli
 
 > ⚠️ Online sources send your prompts (including NSFW/private content) to third-party services, which may log or review them — use at your own risk. API keys are stored only in your browser (localStorage).
 >
-> Context suggestion: SDXL ≥8192, H3 ≥8192 (the negative prompt is also model-generated). The full library (167k tags) is searched in browser memory only — it does not consume model context.
+> Context suggestion: SDXL ≥8192, H3 ≥8192 (the negative prompt is also model-generated). The full library (317k tags) is searched in browser memory only — it does not consume model context.
 
 ### Using the opencode API (needs a local proxy)
 
@@ -59,7 +61,7 @@ Then in "custom": Base URL `http://127.0.0.1:7898/v1`, model `deepseek-v4-flash`
 ## Prompt-library reference
 
 - **Curated (default)**: 347 embedded common tags (quality / hair / expression / figure / clothing / pose / scene / style / NSFW / realism words), works offline.
-- **Full library**: 167k tags (general descriptors + series + character names, types 0/3/4 from the "AI 绘画提示词超市" full dataset). First use fetches `prompt-db.js` (~7.6MB) from the network, then searches in browser memory; each request sends only the ≤80 matched tags to the model — it does not consume model context.
+- **Full library**: 317k tags (general descriptors / artist styles / copyrighted works / characters, from the filtered full dataset of "AI 绘画提示词超市"). First use fetches `prompt-db.js` (~11.5MB) from the network, then searches in browser memory; each request sends only the ≤40 matched tags to the model — it does not consume model context.
 
 ## H3 video prompts
 
