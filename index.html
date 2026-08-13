@@ -158,9 +158,9 @@ footer{margin-top:26px;font-size:12px;color:var(--dim);text-align:center}
           <div class="radios" id="libRadios">
             <div class="radio" data-lib="off">关</div>
             <div class="radio on" data-lib="cur">精选库<small>内嵌 347 条常用</small></div>
-            <div class="radio" data-lib="full">全量库<small>16.7万条</small></div>
+            <div class="radio" data-lib="full">全量库<small>31.7万条</small></div>
           </div>
-          <div class="lib-status" id="libStatus">精选库：内嵌 347 条常用标签；全量库 16.7万条（约 7.6MB，首次联网加载，仅在浏览器内存检索，不占模型上下文）</div>
+          <div class="lib-status" id="libStatus">精选库：内嵌 347 条常用标签；全量库 31.7万条（约 11.5MB，首次联网加载，仅在浏览器内存检索，不占模型上下文）</div>
         </div>
       </div>
     </div>
@@ -231,7 +231,7 @@ footer{margin-top:26px;font-size:12px;color:var(--dim);text-align:center}
         <button class="btn ghost" id="copyNegBtn">📋 复制负面</button>
       </div>
       <div class="hint">
-        本地 llama：需先在本机启动一个 OpenAI 兼容的 llama-server（地址在上方 Base URL 中配置）。<b>上下文建议</b>：SDXL 生图 ≥8192，H3 视频 ≥8192（负面提示词也由模型生成，需预留输出空间）；全量库 16.7万条仅在浏览器内存检索（首次约 7.6MB 下载），每轮只发 ≤80 条命中，<b>不占模型上下文</b>。OpenAI/DeepSeek：填 API Key 即可直连（本地存储）。
+        本地 llama：需先在本机启动一个 OpenAI 兼容的 llama-server（地址在上方 Base URL 中配置）。<b>上下文建议</b>：SDXL 生图 ≥8192，H3 视频 ≥8192（负面提示词也由模型生成，需预留输出空间）；全量库 31.7万条仅在浏览器内存检索（首次约 11.5MB 下载），每轮只发 ≤80 条命中，<b>不占模型上下文</b>。OpenAI/DeepSeek：填 API Key 即可直连（本地存储）。
       </div>
     </div>
     <div id="h3Out" style="display:none">
@@ -243,7 +243,7 @@ footer{margin-top:26px;font-size:12px;color:var(--dim);text-align:center}
     </div>
   </div>
 
-  <footer>直白词典内置 · 提示词库参考(精选/16.7万) · SDXL 生图 + H3 视频 · v1.2.0</footer>
+  <footer>直白词典内置 · 提示词库参考(精选/31.7万) · SDXL 生图 + H3 视频 · v1.2.0</footer>
 </div>
 
 <script>
@@ -545,7 +545,7 @@ function buildFullMap(){
 function loadFullLib(){
   if(FULL_LIB) return Promise.resolve(true);
   if(fullLoading) return fullPromise;
-  fullLoading=true; setLibStatus('全量库加载中…（约 7.6MB）');
+  fullLoading=true; setLibStatus('全量库加载中…（约 11.5MB）');
   fullPromise=new Promise(res=>{
     const s=document.createElement('script');
     s.src='prompt-db.js';
@@ -754,7 +754,7 @@ $('libRadios').addEventListener('click',e=>{
     if(!FULL_LIB) loadFullLib();
     else setLibStatus('全量库已加载：'+FULL_LIB.length.toLocaleString()+' 条');
   }else if(libMode==='cur'){
-    setLibStatus('精选库：内嵌 347 条常用标签；全量库 16.7万条仅在浏览器内存检索，不占模型上下文');
+    setLibStatus('精选库：内嵌 347 条常用标签；全量库 31.7万条仅在浏览器内存检索，不占模型上下文');
   }else{
     setLibStatus('');
   }
