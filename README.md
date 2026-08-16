@@ -34,7 +34,7 @@
 
 | 后端 | Base URL | 说明 |
 |------|----------|------|
-| **本地 llama** | `http://127.0.0.1:4001/v1` | 需先本机启动 OpenAI 兼容的 llama-server（如 Qwen3-4B） |
+| **本地 llama** | `http://127.0.0.1:<端口>/v1` | 需先本机启动 OpenAI 兼容的 llama-server（如 Qwen3-4B） |
 | **OpenAI** | 官方 API | 申请 Key：https://platform.openai.com |
 | **DeepSeek** | 官方 API | 申请 Key：https://platform.deepseek.com |
 | **自定义** | 任意 OpenAI 兼容端点 | 如 opencode 网关（见下） |
@@ -54,7 +54,7 @@ opencode 网关 **`https://opencode.ai/zen/go/v1`** 不返回 CORS 头，浏览�
 python opencode_proxy.py
 ```
 
-然后在「自定义」里填：Base URL `http://127.0.0.1:7898/v1`、模型 `deepseek-v4-flash`、Key 任意。
+然后在「自定义」里填：Base URL `http://127.0.0.1:<端口>/v1`、模型 `deepseek-v4-flash`、Key 任意。
 
 > 推理模型（Qwen3-4B / deepseek-v4-flash 等）会先"思考"，页面已自动禁用思考并调大 token 预算，直接出结果。
 

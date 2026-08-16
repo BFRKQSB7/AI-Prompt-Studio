@@ -34,7 +34,7 @@ Converts Chinese prompts (free-form scene descriptions, NSFW welcome) into Engli
 
 | Backend | Base URL | Notes |
 |---------|----------|-------|
-| **Local llama** | `http://127.0.0.1:4001/v1` | start an OpenAI-compatible llama-server locally (e.g. Qwen3-4B) |
+| **Local llama** | `http://127.0.0.1:<port>/v1` | start an OpenAI-compatible llama-server locally (e.g. Qwen3-4B) |
 | **OpenAI** | official API | get a key at https://platform.openai.com |
 | **DeepSeek** | official API | get a key at https://platform.deepseek.com |
 | **Custom** | any OpenAI-compatible endpoint | e.g. the opencode gateway (below) |
@@ -54,7 +54,7 @@ The opencode gateway **`https://opencode.ai/zen/go/v1`** sends no CORS headers, 
 python opencode_proxy.py
 ```
 
-Then in "custom": Base URL `http://127.0.0.1:7898/v1`, model `deepseek-v4-flash`, any key.
+Then in "custom": Base URL `http://127.0.0.1:<port>/v1`, model `deepseek-v4-flash`, any key.
 
 > Reasoning models (deepseek-v4-flash, etc.) "think" first — the page disables thinking and raises the token budget automatically.
 

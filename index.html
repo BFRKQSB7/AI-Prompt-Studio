@@ -104,7 +104,7 @@ footer{margin-top:26px;font-size:12px;color:var(--dim);text-align:center}
         <option value="deepseek">DeepSeek</option>
         <option value="custom">自定义（OpenAI 兼容）</option>
       </select></div>
-      <div><label>Base URL</label><input id="baseUrl" value="http://127.0.0.1:4001/v1"></div>
+      <div><label>Base URL</label><input id="baseUrl" value="http://127.0.0.1:8080/v1"></div>
       <div><label>模型名</label>
         <div style="display:flex;gap:8px;align-items:center">
           <select id="modelName" style="flex:1"><option value="">（点击载入模型列表）</option></select>
@@ -270,7 +270,7 @@ footer{margin-top:26px;font-size:12px;color:var(--dim);text-align:center}
 const $=id=>document.getElementById(id);
 const LS='promptConvCfg';
 const PROVIDERS={
-  local:{base:'http://127.0.0.1:4001/v1',model:''},
+  local:{base:'http://127.0.0.1:8080/v1',model:''},
   openai:{base:'https://api.openai.com/v1',model:'gpt-4o-mini'},
   deepseek:{base:'https://api.deepseek.com/v1',model:'deepseek-chat'},
   custom:{base:'',model:''}
@@ -887,7 +887,7 @@ $('appTabs').addEventListener('click',e=>{
 
 async function pingLocal(){
   try{
-    const r=await fetch('http://127.0.0.1:4001/v1/models',{signal:AbortSignal.timeout(3000)});
+    const r=await fetch('http://127.0.0.1:8080/v1/models',{signal:AbortSignal.timeout(3000)});
     const s=$('status'); s.className='status ok'; s.innerHTML='<span class="dot"></span>本地后端已连接';
   }catch(e){
     const s=$('status'); s.className='status bad'; s.innerHTML='<span class="dot"></span>本地后端未启动';
